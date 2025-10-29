@@ -79,6 +79,14 @@ export async function getAccessToken(
   }
 }
 
+export async function deleteAccessToken(token: string) {
+  try {
+    await db.query(`DELETE FROM access_tokens WHERE token = $1;`, [token]);
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function createUser(user: ServerUser) {
   try {
     await db.query(

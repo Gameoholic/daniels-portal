@@ -17,6 +17,7 @@ import {
   setAccountCreationCodeUsed,
   getAccessToken,
   getUserPermissions,
+  deleteAccessToken,
 } from "@/src/utils/db/auth/db_queries";
 import { executeDatabaseQuery } from "@/src/utils/db/db";
 
@@ -45,6 +46,12 @@ export async function requestCreateAccessToken(
   );
 }
 
+// CONTAINS HASHED PASSWORD AND OTHER SENSITIVE INFO - NEVER EXPOSE TO CLIENT!
+export async function requestDeleteAccessToken(
+  token: string
+): Promise<ServerDatabaseQueryResult<void>> {
+  return await executeDatabaseQuery(() => deleteAccessToken(token));
+}
 // CONTAINS HASHED PASSWORD AND OTHER SENSITIVE INFO - NEVER EXPOSE TO CLIENT!
 export async function requestGetAccountCreationCode(
   code: string

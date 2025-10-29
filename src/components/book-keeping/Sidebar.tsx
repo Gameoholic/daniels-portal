@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Home,
@@ -16,7 +16,12 @@ import {
   Album,
   Book,
   LogOut,
+  CheckCircle2Icon,
+  AlertCircleIcon,
 } from "lucide-react"; // https://lucide.dev/icons/
+import { logUserOut } from "@/src/actions/auth";
+import { toast } from "sonner";
+import { requestDeleteAccessToken } from "@/src/utils/db/auth/db_actions";
 
 const navItems = [
   { href: "/book-keeping/", label: "Dashboard", icon: Home },
@@ -35,6 +40,25 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function logOut() {
+    const result = await logUserOut();
+    if (result.success) {
+      router.push("/");
+      toast("Logged out", {
+        description: "Successfully logged out on this device.",
+        icon: <CheckCircle2Icon className="text-success-foreground w-5 h-5" />,
+        duration: 3000,
+      });
+    } else {
+      toast("Failed to log out.", {
+        description: result.errorString,
+        icon: <AlertCircleIcon className="text-error-foreground w-5 h-5" />,
+        duration: 3000,
+      });
+    }
+  }
   return (
     <div className="flex flex-col">
       {/* App title */}
@@ -81,13 +105,13 @@ export function Sidebar() {
             </Link>
           </div>
           <div className="text-error-foreground">
-            <Link
+            <button
               className={`flex items-center gap-2 p-3 hover:bg-accent hover:text-accent-foreground rounded-md`}
-              href="/home/user-settings"
+              onClick={logOut}
             >
               <LogOut className="h-5 w-5" />
               <span>Log Out</span>
-            </Link>
+            </button>
           </div>
         </div>
       </nav>

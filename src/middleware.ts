@@ -5,11 +5,20 @@ import {
   requestGetAccessToken,
   requestGetUserPermissions,
 } from "./utils/db/auth/db_actions";
-import { ServerPermission } from "./utils/server_types";
+import {
+  ServerAccessToken,
+  ServerDatabaseQueryResult,
+  ServerPermission,
+} from "./utils/server_types";
 
+// todo: clean up this entire logic
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
-  // Allow public paths regardless of whether logged in or not
+  const token = req.cookies.get("access-token")?.value;
+  const getAccessTokenRequest: ServerDatabaseQueryResult<ServerAccessToken> | null =
+    token == null ? null : await requestGetAccessToken(token);
+
+  // PUBLIC PATHS Allow public paths regardless of whether logged in or not
   const publicPaths = [
     "/",
     "/api/login",
@@ -17,22 +26,31 @@ export async function middleware(req: NextRequest) {
     "/api/verify-account-creation-code",
     "/favicon.ico",
   ];
+
+  // Special case, redirect to home if already logged in:
+  if (
+    // todo this check shouldn't be separate to the one below with the error codes, should be centralized
+    path === "/" &&
+    getAccessTokenRequest &&
+    getAccessTokenRequest.success &&
+    getAccessTokenRequest.result.expiration_timestamp > new Date()
+  ) {
+    return NextResponse.redirect(new URL("/home", req.url));
+  }
   if (publicPaths.includes(path) || path.startsWith("/_next/")) {
     return NextResponse.next();
   }
 
-  // PRIVATE PATHS: ----
+  // PRIVATE PATHS and semi-private paths only allow if user logs in or has permissions
 
   // Verify access token exists
-  const token = req.cookies.get("access-token")?.value;
-  if (!token) {
+  if (!token || !getAccessTokenRequest) {
     return NextResponse.json(
       { error: "You must log in to access this page." },
       { status: 401 }
     );
   }
   // Verify token validity
-  const getAccessTokenRequest = await requestGetAccessToken(token);
   if (!getAccessTokenRequest.success) {
     return NextResponse.json(
       { error: "Invalid access token." },
@@ -47,12 +65,14 @@ export async function middleware(req: NextRequest) {
     );
   }
 
-  // TODO update access token last use timestamp in db
+  // TODO update access token last use timestamp here in db
 
+  // SEMI-PRIVATE PATHS only allow if user is logged in, regardless of permission
   if (path === "/home") {
     return NextResponse.next();
   }
 
+  // PRIVATE PATHS only allow if has permission
   // Verify permissions:
   const userId = getAccessTokenRequest.result.user_id;
   const getUserPermissionsRequest = await requestGetUserPermissions(userId);
