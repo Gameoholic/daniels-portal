@@ -51,7 +51,7 @@ export async function addExpense(expense: ServerExpense) {
         expense.description,
         expense.category,
         expense.amount,
-        expense.paymentMethod,
+        expense.payment_method,
         expense.subscription_id,
         expense.reimbursement_expected_amount,
         expense.reimbursement_notes,

@@ -15,6 +15,11 @@ export interface ClientExpense {
   creationTimestamp: Date;
 }
 
+export interface ClientGymWeight {
+  amount: number;
+  timestamp: Date;
+}
+
 export type ClientDatabaseQueryResult<T> =
   | { success: true; result: T }
   | { success: false; errorString: string };

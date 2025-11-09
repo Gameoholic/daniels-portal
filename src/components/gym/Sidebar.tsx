@@ -18,6 +18,8 @@ import {
   LogOut,
   CheckCircle2Icon,
   AlertCircleIcon,
+  Map,
+  Dumbbell,
 } from "lucide-react"; // https://lucide.dev/icons/
 import { logUserOut } from "@/src/actions/auth";
 import { toast } from "sonner";
@@ -25,17 +27,11 @@ import { requestDeleteAccessToken } from "@/src/utils/db/auth/db_actions";
 import LogOutButton from "../global/LogOutButton";
 
 const navItems = [
-  { href: "/book-keeping/", label: "Dashboard", icon: Home },
+  { href: "/gym/", label: "Dashboard", icon: Home },
   {
-    href: "/book-keeping/expenses",
-    label: "Expenses",
-    icon: BanknoteArrowDown,
-  },
-  { href: "/book-keeping/income", label: "Income", icon: BanknoteArrowUp },
-  {
-    href: "/book-keeping/subscriptions",
-    label: "Subscriptions",
-    icon: Repeat2,
+    href: "/gym/map",
+    label: "Map",
+    icon: Map,
   },
 ];
 
@@ -46,8 +42,8 @@ export function Sidebar() {
     <div className="flex flex-col">
       {/* App title */}
       <div className="flex items-center ml-2 mt-1">
-        <Album className="h-5 w-5" />
-        <p className="ml-2">Book Keeping</p>
+        <Dumbbell className="h-5 w-5" />
+        <p className="ml-2">Gym</p>
       </div>
       {/* Return home */}
       <Link

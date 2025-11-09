@@ -122,6 +122,15 @@ const initDbTables = async (): Promise<void> => {
       );
     `;
 
+  // weight can be XXX.XX
+  const createGymWeightTableQuery = `
+      CREATE TABLE IF NOT EXISTS gym_weight (
+        timestamp TIMESTAMP,
+        user_id UUID NOT NULL,
+        amount NUMERIC(5, 2) NOT NULL
+      );
+    `;
+
   try {
     await initDbTable(createExpensesTableQuery, "expenses");
     await initDbTable(createUsersTableQuery, "users");
@@ -132,6 +141,7 @@ const initDbTables = async (): Promise<void> => {
     );
     await initDbTable(createPermissionsTableQuery, "permissions");
     await initDbTable(createUserPermissionsTableQuery, "user_permissions");
+    await initDbTable(createGymWeightTableQuery, "gym_weight");
     console.log("Successfully initialized database.");
   } catch (err) {
     console.error("Error initializing database:", err);

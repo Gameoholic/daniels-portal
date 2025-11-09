@@ -127,7 +127,7 @@ export async function getAccountCreationCode(
         [code]
       );
 
-    if (result.rows.length == 0) {
+    if (result.rowCount == 0) {
       throw Error("Account creation code does not exist.");
     }
     return result.rows[0];

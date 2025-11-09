@@ -47,6 +47,13 @@ export interface ServerAccountCreationCode {
   deletion_timestamp: Date | null;
 }
 
+// todo - client can access this type..
+export interface ServerGymWeight {
+  user_id: string;
+  amount: number;
+  timestamp: Date;
+}
+
 export interface ServerPermission {
   name: string;
   description: string;

@@ -1,5 +1,7 @@
 export const runtime = "nodejs"; // https://nextjs.org/docs/app/api-reference/edge
 
+// Always prefer using server components over client components because they send 0 javascript to the client
+
 import { NextRequest, NextResponse } from "next/server";
 import {
   requestGetAccessToken,
@@ -102,14 +104,14 @@ export async function middleware(req: NextRequest) {
 
   if (
     (path === "/gym" || path.startsWith("/gym/")) &&
-    userPermissions.some((permission) => permission.name === "gym")
+    userPermissions.some((permission) => permission.name === "use_app_gym")
   ) {
     return NextResponse.next();
   }
 
   if (
     (path === "/car" || path.startsWith("/car/")) &&
-    userPermissions.some((permission) => permission.name === "car")
+    userPermissions.some((permission) => permission.name === "use_app_car")
   ) {
     return NextResponse.next();
   }

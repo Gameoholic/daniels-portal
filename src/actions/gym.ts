@@ -9,11 +9,21 @@ import {
 import {
   ClientDatabaseQueryResult,
   ClientExpense,
+  ClientGymWeight,
 } from "@/src/utils/client_types";
-import { ServerAccessToken, ServerExpense } from "@/src/utils/server_types";
+import {
+  ServerAccessToken,
+  ServerExpense,
+  ServerGymWeight,
+} from "@/src/utils/server_types";
 import { requestGetAccessToken } from "@/src/utils/db/auth/db_actions";
 import { cache } from "react";
 import { cookies } from "next/headers";
+import {
+  requestAddGymWeight,
+  requestDeleteGymWeight,
+  requestGetGymWeights,
+} from "../utils/db/gym/weight/db_actions";
 
 // This cahced call will be per html request, aka per page, so we don't check this multiple times per request.
 const getAccessToken = cache(
@@ -29,8 +39,8 @@ const getAccessToken = cache(
   }
 );
 
-export async function getExpensesAction(): Promise<
-  ClientDatabaseQueryResult<ClientExpense[]>
+export async function getGymWeightsAction(): Promise<
+  ClientDatabaseQueryResult<ClientGymWeight[]>
 > {
   // Verify access token, get user ID from it
   const getAccessTokenRequest = await getAccessToken();
@@ -40,38 +50,26 @@ export async function getExpensesAction(): Promise<
   const userId: string = getAccessTokenRequest.result.user_id;
 
   // Perform server-side request
-  const getExpensesRequest = await requestGetExpenses(userId);
+  const getWeightsRequest = await requestGetGymWeights(userId);
 
   // Convert server-types to client-types for safety, abstract away unneeded stuff
-  if (!getExpensesRequest.success) {
+  if (!getWeightsRequest.success) {
     return {
       success: false,
-      errorString: getExpensesRequest.errorString,
+      errorString: getWeightsRequest.errorString,
     };
   }
   return {
     success: true,
-    result: getExpensesRequest.result.map((serverExpense) => ({
-      id: serverExpense.id,
-      title: serverExpense.title,
-      description: serverExpense.description,
-      category: serverExpense.category,
-      amount: serverExpense.amount,
-      paymentMethod: serverExpense.payment_method,
-      subscriptionId: serverExpense.subscription_id,
-      reimbursementExpectedAmount: serverExpense.reimbursement_expected_amount,
-      reimbursementNotes: serverExpense.reimbursement_notes,
-      reimbursementIncomeIds: serverExpense.reimbursement_income_ids,
-      timestamp: serverExpense.timestamp,
-      lastEditedTimestamp: serverExpense.last_edited_timestamp,
-      lastAccessedTimestamp: serverExpense.last_accessed_timestamp,
-      creationTimestamp: serverExpense.creation_timestamp,
+    result: getWeightsRequest.result.map((serverWeight) => ({
+      timestamp: serverWeight.timestamp,
+      amount: serverWeight.amount,
     })),
   };
 }
 
-export async function addExpenseAction(
-  expense: ClientExpense
+export async function addGymWeightAction(
+  weight: ClientGymWeight
 ): Promise<ClientDatabaseQueryResult<void>> {
   // Verify access token, get user ID from it
   const getAccessTokenRequest = await getAccessToken();
@@ -81,31 +79,49 @@ export async function addExpenseAction(
   const userId: string = getAccessTokenRequest.result.user_id;
 
   // Perform server-side request
-  const serverExpense: ServerExpense = {
-    id: expense.id,
+  const serverGymWeight: ServerGymWeight = {
     user_id: userId,
-    title: expense.title,
-    description: expense.description,
-    category: expense.category,
-    amount: expense.amount,
-    payment_method: expense.paymentMethod,
-    subscription_id: expense.subscriptionId,
-    reimbursement_expected_amount: expense.reimbursementExpectedAmount,
-    reimbursement_notes: expense.reimbursementNotes,
-    reimbursement_income_ids: expense.reimbursementIncomeIds,
-    timestamp: expense.timestamp,
-    last_edited_timestamp: expense.lastEditedTimestamp,
-    last_accessed_timestamp: expense.lastAccessedTimestamp,
-    creation_timestamp: expense.creationTimestamp,
-    deletion_timestamp: null,
+    timestamp: weight.timestamp,
+    amount: weight.amount,
   };
-  const addExpenseRequest = await requestAddExpense(serverExpense);
+  const addGymWeightRequest = await requestAddGymWeight(serverGymWeight);
 
   // Convert server-types to client-types for safety, abstract away unneeded stuff
-  if (!addExpenseRequest.success) {
+  if (!addGymWeightRequest.success) {
     return {
       success: false,
-      errorString: addExpenseRequest.errorString,
+      errorString: addGymWeightRequest.errorString,
+    };
+  }
+  return {
+    success: true,
+    result: undefined, // void
+  };
+}
+
+export async function deleteGymWeightAction(
+  weight: ClientGymWeight
+): Promise<ClientDatabaseQueryResult<void>> {
+  // Verify access token, get user ID from it
+  const getAccessTokenRequest = await getAccessToken();
+  if (!getAccessTokenRequest.success) {
+    return getAccessTokenRequest;
+  }
+  const userId: string = getAccessTokenRequest.result.user_id;
+
+  // Perform server-side request
+  const serverGymWeight: ServerGymWeight = {
+    user_id: userId,
+    timestamp: weight.timestamp,
+    amount: weight.amount,
+  };
+  const deleteGymWeightRequest = await requestDeleteGymWeight(serverGymWeight);
+
+  // Convert server-types to client-types for safety, abstract away unneeded stuff
+  if (!deleteGymWeightRequest.success) {
+    return {
+      success: false,
+      errorString: deleteGymWeightRequest.errorString,
     };
   }
   return {

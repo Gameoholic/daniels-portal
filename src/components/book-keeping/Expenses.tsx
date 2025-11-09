@@ -21,9 +21,18 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default function Expenses({ expenses }: { expenses: ClientExpense[] }) {
+// TODO: handle error string
+export default function Expenses({
+  expenses,
+  loading,
+  errorString,
+}: {
+  expenses: ClientExpense[];
+  loading: boolean;
+  errorString: string;
+}) {
   const SortAscending = true;
   // Expenses sorted by a value, grouped by a different value
   const groupedExpenses: Record<string, ClientExpense[]> = expenses
@@ -45,7 +54,7 @@ export default function Expenses({ expenses }: { expenses: ClientExpense[] }) {
       <p className="font-semibold text-2xl mb-2">Expenses</p>
 
       <div className="grid grid-cols-2 gap-4">
-        {ExpenseHistoryCard(groupedExpenses)}
+        {ExpenseHistoryCard(groupedExpenses, loading)}
       </div>
     </div>
   );
@@ -89,7 +98,10 @@ function ConvertDayOfWeekToString(day: number) {
   );
 }
 
-function ExpenseHistoryCard(groupedExpenses: Record<string, ClientExpense[]>) {
+function ExpenseHistoryCard(
+  groupedExpenses: Record<string, ClientExpense[]>,
+  loading: boolean
+) {
   return (
     <Card>
       <CardHeader>
@@ -99,9 +111,13 @@ function ExpenseHistoryCard(groupedExpenses: Record<string, ClientExpense[]>) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {Object.entries(groupedExpenses).map(([date, dateExpenses]) => (
-          <div key={date}>{ExpensesGroupedByDateCard(date, dateExpenses)}</div>
-        ))}
+        {loading
+          ? ExpensesGroupedByDateCard("", [], true)
+          : Object.entries(groupedExpenses).map(([date, dateExpenses]) => (
+              <div key={date}>
+                {ExpensesGroupedByDateCard(date, dateExpenses, loading)}
+              </div>
+            ))}
       </CardContent>
     </Card>
   );
@@ -109,7 +125,8 @@ function ExpenseHistoryCard(groupedExpenses: Record<string, ClientExpense[]>) {
 
 function ExpensesGroupedByDateCard(
   date: string,
-  dateExpenses: ClientExpense[]
+  dateExpenses: ClientExpense[],
+  loading: boolean
 ) {
   return (
     <Card className="mb-10 py-0 gap-0 px-0 border-0 border-b-5 rounded-xs">
@@ -118,15 +135,21 @@ function ExpensesGroupedByDateCard(
           {/* Date string + tooltip for date formatted with numbers */}
           {
             <Tooltip>
-              <TooltipTrigger>{date}</TooltipTrigger>
+              <TooltipTrigger>
+                {loading ? <Skeleton className="h-4 w-[200px]" /> : date}
+              </TooltipTrigger>
               <TooltipContent>
-                <p>
-                  {ConvertDayOfWeekToString(dateExpenses[0].timestamp.getDay())}
-                  {" • "}
-                  {new Intl.DateTimeFormat("en-IL", {
-                    dateStyle: "short",
-                  }).format(dateExpenses[0].timestamp)}
-                </p>
+                {loading || (
+                  <p>
+                    {ConvertDayOfWeekToString(
+                      dateExpenses[0].timestamp.getDay()
+                    )}
+                    {" • "}
+                    {new Intl.DateTimeFormat("en-IL", {
+                      dateStyle: "short",
+                    }).format(dateExpenses[0].timestamp)}
+                  </p>
+                )}
               </TooltipContent>
             </Tooltip>
           }
@@ -134,10 +157,14 @@ function ExpensesGroupedByDateCard(
         </CardTitle>
       </CardHeader>
       <CardContent className="px-0">
-        {dateExpenses.map((expense) => (
-          // The following is the card for an individual expense
-          <div key={expense.id}>{ExpenseCard(expense)}</div>
-        ))}
+        {loading
+          ? Array.from({ length: 3 }).map(() => (
+              <LoadingPlaceholderExpenseCard />
+            ))
+          : dateExpenses.map((expense) => (
+              // The following is the card for an individual expense
+              <div key={expense.id}>{ExpenseCard(expense)}</div>
+            ))}
       </CardContent>
     </Card>
   );
@@ -255,6 +282,36 @@ function ExpenseCard(expense: ClientExpense) {
         <div className="text-[16px]">
           - <span className="tracking-tighter">₪ </span>
           5,532
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LoadingPlaceholderExpenseCard() {
+  return (
+    <Card className="border-2 border-dashed rounded-2xl my-3 gap-0">
+      {/* Top right icons */}
+      <CardHeader className="flex p-0 m-0 justify-end gap-3 mr-5"></CardHeader>
+      {/* Top right icons */}
+      <CardContent className="flex items-center justify-between py-4">
+        {/* Left side */}
+        <div className="flex items-center space-x-3">
+          {/* Icon */}
+          <div className="bg-accent rounded-full p-3">
+            <Skeleton className="h-5 w-5" />
+          </div>
+          {/* Title + Description + Time */}
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-4 w-[80px] mb-1" />
+            <Skeleton className="h-2 w-[80px]" />
+            <Skeleton className="h-2 w-[80px]" />
+          </div>
+        </div>
+
+        {/* Right side */}
+        <div className="text-[16px]">
+          <Skeleton className="h-4 w-[80px] mb-1" />
         </div>
       </CardContent>
     </Card>
