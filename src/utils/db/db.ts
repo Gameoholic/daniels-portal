@@ -108,16 +108,10 @@ const initDbTables = async (): Promise<void> => {
       );
     `;
 
-  const createPermissionsTableQuery = `
-      CREATE TABLE IF NOT EXISTS permissions (
-        name VARCHAR PRIMARY KEY,
-        description TEXT
-      );
-    `;
   const createUserPermissionsTableQuery = `
       CREATE TABLE IF NOT EXISTS user_permissions (
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        permission_name VARCHAR REFERENCES permissions(name) ON DELETE CASCADE,
+        permission_name VARCHAR,
         PRIMARY KEY (user_id, permission_name)
       );
     `;
@@ -139,7 +133,6 @@ const initDbTables = async (): Promise<void> => {
       createAccountCreationCodesTableQuery,
       "account_creation_codes"
     );
-    await initDbTable(createPermissionsTableQuery, "permissions");
     await initDbTable(createUserPermissionsTableQuery, "user_permissions");
     await initDbTable(createGymWeightTableQuery, "gym_weight");
     console.log("Successfully initialized database.");
