@@ -55,8 +55,8 @@ export interface ServerGymWeight {
 }
 
 export interface ServerPermission {
-  name: string;
-  description: string;
+  user_id: string;
+  permission_name: string;
 }
 
 export type ServerDatabaseQueryResult<T> =

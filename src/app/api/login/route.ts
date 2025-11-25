@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   requestCreateAccessToken,
   requestGetUserByUsername,
+  requestUpdateUserLastLoginTimestamp,
 } from "@/src/utils/db/auth/db_actions";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
@@ -68,6 +69,16 @@ export async function POST(req: Request) {
       { error: "Could not generate access token." },
       { status: 500 }
     );
+  }
+
+  // Update last access timestamp
+  const updateUserLastLoginTimestampRequest = await requestUpdateUserLastLoginTimestamp(user.id);
+  if (!updateUserLastLoginTimestampRequest.success) {
+    return NextResponse.json(
+      { error: "Could not generate access token." },
+      { status: 500 }
+    );
+    // Todo: if this happens, delete the token
   }
 
   // Return successful response

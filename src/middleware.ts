@@ -88,7 +88,7 @@ export async function middleware(req: NextRequest) {
 
   if (
     (path === "/admin" || path.startsWith("/admin")) &&
-    userPermissions.some((permission) => permission.name === "use_app_admin")
+    userPermissions.some((permission) => permission.permission_name === "use_app_admin")
   ) {
     return NextResponse.next();
   }
@@ -96,22 +96,23 @@ export async function middleware(req: NextRequest) {
   if (
     (path === "/book-keeping" || path.startsWith("/book-keeping/")) &&
     userPermissions.some(
-      (permission) => permission.name === "use_app_book_keeping"
+      (permission) => permission.permission_name === "use_app_book_keeping"
     )
   ) {
     return NextResponse.next();
   }
 
+  console.log(userPermissions[0]);
   if (
     (path === "/gym" || path.startsWith("/gym/")) &&
-    userPermissions.some((permission) => permission.name === "use_app_gym")
+    userPermissions.some((permission) => permission.permission_name === "use_app_gym")
   ) {
     return NextResponse.next();
   }
 
   if (
     (path === "/car" || path.startsWith("/car/")) &&
-    userPermissions.some((permission) => permission.name === "use_app_car")
+    userPermissions.some((permission) => permission.permission_name === "use_app_car")
   ) {
     return NextResponse.next();
   }

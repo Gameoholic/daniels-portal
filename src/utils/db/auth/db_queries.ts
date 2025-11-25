@@ -136,6 +136,20 @@ export async function getAccountCreationCode(
   }
 }
 
+export async function updateUserLastLoginTimestamp(userId: string): Promise<void> {
+  try {
+    const result = await db.query(
+      "UPDATE users SET last_login_timestamp = $1 WHERE id = $2",
+      [new Date(), userId]
+    );
+    if (result.rowCount == 0) {
+      throw Error("User doesn't exist.");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function setAccountCreationCodeUsed(code: string): Promise<void> {
   try {
     const result = await db.query(
@@ -155,15 +169,9 @@ export async function getUserPermissions(
 ): Promise<ServerPermission[]> {
   try {
     const result: QueryResult<ServerPermission> =
-      await db.query<ServerPermission>( // I don't really get this query entirely...
+      await db.query<ServerPermission>(
         `
-        SELECT 
-          user_permissions.permission_name AS name, 
-          permissions.description
-        FROM user_permissions
-        JOIN permissions 
-          ON permissions.name = user_permissions.permission_name
-        WHERE user_permissions.user_id = $1
+        SELECT * FROM user_permissions WHERE user_id = $1
       `,
         [userId]
       );

@@ -18,7 +18,7 @@ import {
   Pencil,
   GitFork,
 } from "lucide-react"; // https://lucide.dev/icons/
-import { logUserOut } from "@/src/actions/auth";
+import { logUserOut } from "@/src/actions/user-actions";
 import { toast } from "sonner";
 import LogOutButton from "../global/LogOutButton";
 

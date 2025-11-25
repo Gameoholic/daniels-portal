@@ -18,6 +18,7 @@ import {
   getAccessToken,
   getUserPermissions,
   deleteAccessToken,
+  updateUserLastLoginTimestamp,
 } from "@/src/utils/db/auth/db_queries";
 import { executeDatabaseQuery } from "@/src/utils/db/db";
 
@@ -71,6 +72,13 @@ export async function requestCreateUser(
   user: ServerUser
 ): Promise<ServerDatabaseQueryResult<void>> {
   return await executeDatabaseQuery(() => createUser(user));
+}
+
+// CONTAINS HASHED PASSWORD AND OTHER SENSITIVE INFO - NEVER EXPOSE TO CLIENT!
+export async function requestUpdateUserLastLoginTimestamp(
+  userId: string
+): Promise<ServerDatabaseQueryResult<void>> {
+  return await executeDatabaseQuery(() => updateUserLastLoginTimestamp(userId));
 }
 
 // CONTAINS HASHED PASSWORD AND OTHER SENSITIVE INFO - NEVER EXPOSE TO CLIENT!

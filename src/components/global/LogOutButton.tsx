@@ -1,7 +1,7 @@
 "use client";
 
 import { LogOut, CheckCircle2Icon, AlertCircleIcon } from "lucide-react"; // https://lucide.dev/icons/
-import { logUserOut } from "@/src/actions/auth";
+import { logUserOut } from "@/src/actions/user-actions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 

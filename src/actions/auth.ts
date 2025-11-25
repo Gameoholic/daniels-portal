@@ -17,7 +17,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 
 // This cached call will be per html request, aka per page, so we don't check this multiple times per request.
-const getAccessToken = cache(
+export const getAccessToken = cache(
   async (): Promise<ClientDatabaseQueryResult<ServerAccessToken>> => {
     const token = (await cookies()).get("access-token")?.value;
     if (!token) {
@@ -29,30 +29,3 @@ const getAccessToken = cache(
     return await requestGetAccessToken(token);
   }
 );
-
-export async function logUserOut(): Promise<ClientDatabaseQueryResult<void>> {
-  // Verify access token, get user ID from it
-  const getAccessTokenRequest = await getAccessToken();
-  if (!getAccessTokenRequest.success) {
-    return getAccessTokenRequest;
-  }
-  const token: string = getAccessTokenRequest.result.token;
-  // Perform server-side request
-  const getExpensesRequest = await requestDeleteAccessToken(token);
-
-  // Convert server-types to client-types for safety, abstract away unneeded stuff
-  if (!getExpensesRequest.success) {
-    return {
-      success: false,
-      errorString: getExpensesRequest.errorString,
-    };
-  }
-
-  // Delete access token cookie client-side
-  (await cookies()).delete("access-token");
-
-  return {
-    success: true,
-    result: undefined, // void
-  };
-}

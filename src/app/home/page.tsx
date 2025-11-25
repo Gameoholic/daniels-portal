@@ -1,11 +1,14 @@
-"use client";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
+import { getExpensesAction } from "@/src/actions/expenses";
+import { Suspense } from "react";
 import { CircleQuestionMark } from "lucide-react"; // https://lucide.dev/icons/
+import { getUserAction } from "@/src/actions/user-actions";
+import { ClientUser } from "@/src/utils/client_types";
+import HomeWelcome from "@/src/components/home/Home";
 
 // Can issue account creation codes by email. User will be able to delete these codes.
 // Can manage and delete all account creation codes, even those issued by other users.
@@ -16,53 +19,40 @@ import { CircleQuestionMark } from "lucide-react"; // https://lucide.dev/icons/
 // Account creation codes (create + manage/delete)
 // Users
 
-export default function AdminPanel() {
+
+
+// by default, pages are rendered on server. meaning the code is ran on the server,
+// then a simpler html with no code is sent to the client.
+// a client component/page, will be rendered on client, but can't use server stuff like databases.
+// async server component (export default async function Home())
+
+export default function Home() {
+
   return (
-    <div>
-      <p className="font-semibold text-2xl mb-2">Welcome, $USERNAME</p>
-      <p className="font-medium text-1xl text-muted-foreground">
-        User ID: $USER_ID
-      </p>
-      <p className="font-medium text-1xl text-muted-foreground">
-        Email: $EMAIL
-      </p>
-      <p className="font-medium text-1xl text-muted-foreground">
-        Last log-in: $LAST_LOGIN
-      </p>
-      <div className="flex gap-1 items-center">
-        <p className="font-medium text-1xl text-muted-foreground">
-          Access tokens: $NUMBER
-        </p>
-        <AccessTokensTooltip />
-      </div>
-    </div>
+    <section>
+      <Suspense
+        fallback={
+          <HomeWelcome user={null} loading={true} errorString=""/>
+        }
+      >
+        <UserDataLoader />
+      </Suspense>
+    </section>
   );
 }
 
-export function AccessTokensTooltip() {
+export async function UserDataLoader() {
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+  const userAction = await getUserAction();
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <CircleQuestionMark className="h-5 w-5 text-muted-foreground" />
-      </TooltipTrigger>
-      <TooltipContent>
-        <div className="max-h-50 max-w-100 m-1 space-y-1">
-          <p className="text-wrap">
-            Access tokens are data stored on your device via cookies that allow
-            connection to your account without the need to enter a password each
-            time.
-          </p>
-          <p className="text-wrap">
-            If there is currently more than one access token, you may have
-            previously logged in through other devices.
-          </p>
-          <p className="text-wrap">
-            You can view and revoke access tokens in the account settings, or
-            revoke the access token you're currently connected with immediately
-            by logging out.
-          </p>
-        </div>
-      </TooltipContent>
-    </Tooltip>
+    <HomeWelcome
+      user={userAction.success ? userAction.result : null}
+      loading={false}
+      errorString={userAction.success ? "" : userAction.errorString}
+    />
   );
 }
+
+
+
+

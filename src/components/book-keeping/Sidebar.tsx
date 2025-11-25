@@ -19,7 +19,7 @@ import {
   CheckCircle2Icon,
   AlertCircleIcon,
 } from "lucide-react"; // https://lucide.dev/icons/
-import { logUserOut } from "@/src/actions/auth";
+import { logUserOut } from "@/src/actions/user-actions";
 import { toast } from "sonner";
 import { requestDeleteAccessToken } from "@/src/utils/db/auth/db_actions";
 import LogOutButton from "../global/LogOutButton";

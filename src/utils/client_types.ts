@@ -20,6 +20,16 @@ export interface ClientGymWeight {
   timestamp: Date;
 }
 
+export interface ClientUser {
+  id: string;
+  username: string;
+  email: string;
+  creationTimestamp: Date;
+  lastLoginTimestamp: Date | null;
+}
+
 export type ClientDatabaseQueryResult<T> =
   | { success: true; result: T }
   | { success: false; errorString: string };
+
+  
