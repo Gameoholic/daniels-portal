@@ -19,21 +19,16 @@ import HomeWelcome from "@/src/components/home/Home";
 // Account creation codes (create + manage/delete)
 // Users
 
-
-
 // by default, pages are rendered on server. meaning the code is ran on the server,
 // then a simpler html with no code is sent to the client.
 // a client component/page, will be rendered on client, but can't use server stuff like databases.
 // async server component (export default async function Home())
 
 export default function Home() {
-
   return (
     <section>
       <Suspense
-        fallback={
-          <HomeWelcome user={null} loading={true} errorString=""/>
-        }
+        fallback={<HomeWelcome user={null} loading={true} errorString="" />}
       >
         <UserDataLoader />
       </Suspense>
@@ -41,6 +36,8 @@ export default function Home() {
   );
 }
 
+// TODO: to get the second data (tokens) and avoid waterfall:
+// https://www.youtube.com/watch?v=6G8tebMv3Yk
 export async function UserDataLoader() {
   await new Promise((resolve) => setTimeout(resolve, 3000));
   const userAction = await getUserAction();
@@ -52,7 +49,3 @@ export async function UserDataLoader() {
     />
   );
 }
-
-
-
-
