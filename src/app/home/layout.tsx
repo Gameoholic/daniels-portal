@@ -1,5 +1,5 @@
 import "@/src/app/globals.css";
-import { Sidebar } from "@/src/components/home/Sidebar";
+import { SidebarServer } from "@/src/components/home/SidebarServer";
 
 export default function RootLayout({
   children,
@@ -8,7 +8,7 @@ export default function RootLayout({
 }>) {
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      <SidebarServer />
       <main className="flex-1 p-6 overflow-y-auto h-screen">
         {/* overflow-y-auto and h-screen prevent scrolling of left sidebar*/}
         {children}
