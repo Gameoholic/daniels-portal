@@ -47,7 +47,6 @@ export function SidebarClient({ navItems }: { navItems: SidebarItem[] }) {
       <div className="m-6 mt-2"></div>
 
       <nav className="flex flex-col p-4 pt-1 pr-8 border-r-4 flex-1 justify-between">
-        {/* Top nav items */}
         <div>
           {navItems.map(({ href, label, iconName }) => {
             const isActive = pathname === href;
@@ -72,12 +71,11 @@ export function SidebarClient({ navItems }: { navItems: SidebarItem[] }) {
           })}
         </div>
 
-        {/* Bottom nav */}
         <div>
           <div className="text-muted-foreground">
             <Link
               className="flex items-center gap-2 p-3 hover:bg-accent hover:text-accent-foreground rounded-md"
-              href="/home/user-settings"
+              href="/user-settings"
             >
               <UserRoundCog className="h-5 w-5" />
               <span>User Settings</span>
@@ -87,7 +85,7 @@ export function SidebarClient({ navItems }: { navItems: SidebarItem[] }) {
           <div>
             <Link
               className="flex items-center gap-2 p-3 hover:bg-accent hover:text-accent-foreground rounded-md"
-              href="/home/settings"
+              href="/settings"
             >
               <Settings className="h-5 w-5" />
               <span>Settings</span>

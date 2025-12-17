@@ -23,7 +23,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/src/components/custom/card";
+} from "@/src/components/custom-shadcn/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp } from "lucide-react";
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts";

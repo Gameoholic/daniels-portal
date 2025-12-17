@@ -13,7 +13,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/src/components/custom/card";
+} from "@/src/components/custom-shadcn/card";
 import { ClientExpense } from "../../utils/client_types";
 import { Landmark, Info, HandCoins, Pencil, Trash } from "lucide-react";
 import {

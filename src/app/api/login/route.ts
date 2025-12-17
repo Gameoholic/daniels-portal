@@ -57,8 +57,8 @@ export async function POST(req: Request) {
 
   // Generate token
   const token: string = crypto.randomBytes(64).toString("base64url");
-  const DaysInMilliseconds = 1000 * 60 * 60 * 24;
-  const ExpiryTimestamp: number = Date.now() + DaysInMilliseconds * 7;
+  const OneDayInMilliseconds = 1000 * 60 * 60 * 24;
+  const ExpiryTimestamp: number = Date.now() + OneDayInMilliseconds * 7;
   const createAccessTokenRequest = await requestCreateAccessToken(
     token,
     user.id,
@@ -72,7 +72,8 @@ export async function POST(req: Request) {
   }
 
   // Update last access timestamp
-  const updateUserLastLoginTimestampRequest = await requestUpdateUserLastLoginTimestamp(user.id);
+  const updateUserLastLoginTimestampRequest =
+    await requestUpdateUserLastLoginTimestamp(user.id);
   if (!updateUserLastLoginTimestampRequest.success) {
     return NextResponse.json(
       { error: "Could not generate access token." },

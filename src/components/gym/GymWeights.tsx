@@ -60,7 +60,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/src/components/custom/card";
+} from "@/src/components/custom-shadcn/card";
 import { ClientGymWeight } from "@/src/utils/client_types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";

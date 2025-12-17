@@ -85,6 +85,8 @@ const initDbTables = async (): Promise<void> => {
         email VARCHAR NOT NULL UNIQUE,
         creation_timestamp TIMESTAMP NOT NULL,
         last_login_timestamp TIMESTAMP,
+        default_token_expiry_seconds INTEGER NOT NULL,
+        max_tokens_at_a_time INTEGER,
         deletion_timestamp TIMESTAMP
       );
     `;
@@ -94,6 +96,7 @@ const initDbTables = async (): Promise<void> => {
         token VARCHAR PRIMARY KEY,
         user_id UUID NOT NULL,
         expiration_timestamp TIMESTAMP NOT NULL,
+        creation_timestamp TIMESTAMP NOT NULL,
         last_use_timestamp TIMESTAMP
       );
     `;

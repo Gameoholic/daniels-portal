@@ -19,6 +19,8 @@ import {
   getUserPermissions,
   deleteAccessToken,
   updateUserLastLoginTimestamp,
+  getUserAccessTokens,
+  updateAccessTokenLastUseTimestamp,
 } from "@/src/utils/db/auth/db_queries";
 import { executeDatabaseQuery } from "@/src/utils/db/db";
 
@@ -43,7 +45,7 @@ export async function requestCreateAccessToken(
   expirationTimestamp: Date
 ): Promise<ServerDatabaseQueryResult<void>> {
   return await executeDatabaseQuery(() =>
-    createAccessToken(token, userId, expirationTimestamp, null)
+    createAccessToken(token, userId, expirationTimestamp, null, new Date())
   );
 }
 
@@ -82,6 +84,15 @@ export async function requestUpdateUserLastLoginTimestamp(
 }
 
 // RETURNS SERVER TYPE WITH FULL DATA THAT CLIENT SHOULDN'T NECESSARILY KNOW ABOUT - NEVER EXPOSE TO CLIENT!
+export async function requestUpdateAccessTokenLastUseTimestamp(
+  token: string
+): Promise<ServerDatabaseQueryResult<void>> {
+  return await executeDatabaseQuery(() =>
+    updateAccessTokenLastUseTimestamp(token)
+  );
+}
+
+// RETURNS SERVER TYPE WITH FULL DATA THAT CLIENT SHOULDN'T NECESSARILY KNOW ABOUT - NEVER EXPOSE TO CLIENT!
 export async function requestSetAccountCreationCodeUsed(
   code: string
 ): Promise<ServerDatabaseQueryResult<void>> {
@@ -93,4 +104,11 @@ export async function requestGetUserPermissions(
   userId: string
 ): Promise<ServerDatabaseQueryResult<ServerPermission[]>> {
   return await executeDatabaseQuery(() => getUserPermissions(userId));
+}
+
+// RETURNS SERVER TYPE WITH FULL DATA THAT CLIENT SHOULDN'T NECESSARILY KNOW ABOUT - NEVER EXPOSE TO CLIENT!
+export async function requestGetUserAccessTokens(
+  userId: string
+): Promise<ServerDatabaseQueryResult<ServerAccessToken[]>> {
+  return await executeDatabaseQuery(() => getUserAccessTokens(userId));
 }

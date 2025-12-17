@@ -26,7 +26,7 @@
   --color-error-foreground: var(--error-foreground);
   --color-error: var(--error);
   --color-success-foreground: var(--success-foreground);
-  --color-success: var(--error);
+  --color-success: var(--success);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -128,7 +128,7 @@ body {
   --money-foreground: oklch(0.696 0.17 162.48);
   --error: oklch(24.733% 0.08854 26.634);
   --error-foreground: oklch(66.066% 0.22581 25.939);
-  --success: oklch(44.866% 0.10949 155.319);
+  --success: oklch(96.533% 0.04996 166.291);
   --success-foreground: oklch(0.696 0.17 162.48);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
@@ -168,7 +168,7 @@ body {
   --money-foreground: oklch(0.696 0.17 162.48);
   --error: oklch(24.733% 0.08854 26.634);
   --error-foreground: oklch(41.79% 79.21 36.9);
-  --success: oklch(44.866% 0.10949 155.319);
+  --success: oklch(96.533% 0.04996 166.291);
   --success-foreground: oklch(0.696 0.17 162.48);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);

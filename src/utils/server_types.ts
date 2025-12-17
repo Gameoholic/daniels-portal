@@ -27,6 +27,8 @@ export interface ServerUser {
   email: string;
   creation_timestamp: Date;
   last_login_timestamp: Date | null;
+  default_token_expiry_seconds: number;
+  max_tokens_at_a_time: number | null;
   deletion_timestamp: Date | null;
 }
 
@@ -34,6 +36,7 @@ export interface ServerUser {
 export interface ServerAccessToken {
   token: string;
   user_id: string;
+  creation_timestamp: Date;
   expiration_timestamp: Date;
   last_use_timestamp: Date | null;
 }

@@ -38,8 +38,7 @@ export default function Home() {
 
 // TODO: to get the second data (tokens) and avoid waterfall:
 // https://www.youtube.com/watch?v=6G8tebMv3Yk
-export async function UserDataLoader() {
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+async function UserDataLoader() {
   const userAction = await getUserAction();
   return (
     <HomeWelcome

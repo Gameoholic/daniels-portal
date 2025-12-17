@@ -1,11 +1,11 @@
 "use server";
 import "server-only";
 import { SidebarClient, SidebarItem } from "./SidebarClient";
-import { getAccessToken } from "@/src/actions/auth";
+import { getAndVerifyAccessToken } from "@/src/actions/auth";
 import { requestGetUserPermissions } from "@/src/utils/db/auth/db_actions";
 
 export async function SidebarServer() {
-  const tokenResult = await getAccessToken();
+  const tokenResult = await getAndVerifyAccessToken();
   if (!tokenResult.success) return null;
   const userId = tokenResult.result.user_id;
 

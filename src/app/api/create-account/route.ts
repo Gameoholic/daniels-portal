@@ -105,6 +105,8 @@ export async function POST(req: Request) {
     creation_timestamp: new Date(),
     last_login_timestamp: null,
     deletion_timestamp: null,
+    default_token_expiry_seconds: 60 * 60 * 24 * 7, // 1 week
+    max_tokens_at_a_time: null,
   });
 
   if (!createUserRequest.success) {

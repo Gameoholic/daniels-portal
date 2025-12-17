@@ -25,11 +25,19 @@ export interface ClientUser {
   username: string;
   email: string;
   creationTimestamp: Date;
+  defaultTokenExpirySeconds: number;
+  maxTokensAtATime: number | null;
   lastLoginTimestamp: Date | null;
+}
+
+export interface ClientAccessToken {
+  token: string;
+  userId: string;
+  creationTimestamp: Date;
+  expirationTimestamp: Date;
+  lastUseTimestamp: Date | null;
 }
 
 export type ClientDatabaseQueryResult<T> =
   | { success: true; result: T }
   | { success: false; errorString: string };
-
-  

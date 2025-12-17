@@ -24,26 +24,13 @@ import {
   requestDeleteGymWeight,
   requestGetGymWeights,
 } from "../utils/db/gym/weight/db_actions";
-
-// This cahced call will be per html request, aka per page, so we don't check this multiple times per request.
-const getAccessToken = cache(
-  async (): Promise<ClientDatabaseQueryResult<ServerAccessToken>> => {
-    const token = (await cookies()).get("access-token")?.value;
-    if (!token) {
-      return {
-        success: false,
-        errorString: "Invalid access token.",
-      };
-    }
-    return await requestGetAccessToken(token);
-  }
-);
+import { getAndVerifyAccessToken } from "./auth";
 
 export async function getGymWeightsAction(): Promise<
   ClientDatabaseQueryResult<ClientGymWeight[]>
 > {
   // Verify access token, get user ID from it
-  const getAccessTokenRequest = await getAccessToken();
+  const getAccessTokenRequest = await getAndVerifyAccessToken();
   if (!getAccessTokenRequest.success) {
     return getAccessTokenRequest;
   }
@@ -72,7 +59,7 @@ export async function addGymWeightAction(
   weight: ClientGymWeight
 ): Promise<ClientDatabaseQueryResult<void>> {
   // Verify access token, get user ID from it
-  const getAccessTokenRequest = await getAccessToken();
+  const getAccessTokenRequest = await getAndVerifyAccessToken();
   if (!getAccessTokenRequest.success) {
     return getAccessTokenRequest;
   }
@@ -103,7 +90,7 @@ export async function deleteGymWeightAction(
   weight: ClientGymWeight
 ): Promise<ClientDatabaseQueryResult<void>> {
   // Verify access token, get user ID from it
-  const getAccessTokenRequest = await getAccessToken();
+  const getAccessTokenRequest = await getAndVerifyAccessToken();
   if (!getAccessTokenRequest.success) {
     return getAccessTokenRequest;
   }
