@@ -213,6 +213,13 @@ function AccessTokensTooltip() {
             connection to your account without the need to enter a password each
             time. They are created automatically upon log-in.
           </p>
+          <p className="text-wrap text-error-foreground">
+            Caution: Never reveal your access token to anybody else. Anybody can
+            put it in their device and use it to perform operations as you and
+            fetch data without authentication. If you believe a token has been
+            compromised, revoke all tokens immediately, and change your password
+            just to be safe.
+          </p>
           <p className="text-wrap">
             Logging out automatically revokes your current access token, but not
             all others. If there is currently more than one access token, you
@@ -220,7 +227,7 @@ function AccessTokensTooltip() {
           </p>
           <p className="text-wrap">
             Access tokens automatically expire after a set amount of time, which
-            can be configured here.
+            can be configured in the Advanced Settings.
           </p>
           <p className="text-wrap">
             You can view and manually revoke access tokens here.
@@ -241,9 +248,7 @@ function AccessTokenLastUseTooltip() {
         <div className="max-h-50 max-w-100 m-1 space-y-1">
           <p className="text-wrap">
             The last time this token was used for any operation that requires
-            authentication (meaning opening a page, adding/deleting data, etc.).
-            In the case that the token has already expired, this will show the
-            last attempted operation using this token.
+            authentication (meaning opening a page, adding/deleting data, etc.)
           </p>
         </div>
       </TooltipContent>

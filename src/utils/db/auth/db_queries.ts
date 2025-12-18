@@ -99,9 +99,25 @@ export async function getUserAccessTokens(
   }
 }
 
-export async function deleteAccessToken(token: string) {
+export async function updateAccessTokenManuallyRevokedTimestamp(token: string) {
   try {
-    await db.query(`DELETE FROM access_tokens WHERE token = $1;`, [token]);
+    await db.query(
+      `UPDATE access_tokens SET manually_revoked_timestamp = $1 WHERE token = $2;`,
+      [new Date(), token]
+    );
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function updateAccessTokenAutomaticallyRevokedTimestamp(
+  token: string
+) {
+  try {
+    await db.query(
+      `UPDATE access_tokens SET automatically_revoked_timestamp = $1 WHERE token = $2;`,
+      [new Date(), token]
+    );
   } catch (error) {
     throw error;
   }
@@ -184,6 +200,23 @@ export async function updateDefaultTokenExpiry(
     const result = await db.query(
       "UPDATE users SET default_token_expiry_seconds = $1 WHERE id = $2",
       [expirySeconds, userId]
+    );
+    if (result.rowCount == 0) {
+      throw Error("User doesn't exist.");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function updateMaxTokensAtATime(
+  userId: string,
+  max: number | null
+): Promise<void> {
+  try {
+    const result = await db.query(
+      "UPDATE users SET max_tokens_at_a_time = $1 WHERE id = $2",
+      [max, userId]
     );
     if (result.rowCount == 0) {
       throw Error("User doesn't exist.");

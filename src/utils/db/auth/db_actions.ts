@@ -17,11 +17,13 @@ import {
   setAccountCreationCodeUsed,
   getAccessToken,
   getUserPermissions,
-  deleteAccessToken,
+  updateAccessTokenManuallyRevokedTimestamp as updateAccessTokenManuallyRevokedTimestamp,
   updateUserLastLoginTimestamp,
   getUserAccessTokens,
   updateAccessTokenLastUseTimestamp,
   updateDefaultTokenExpiry,
+  updateMaxTokensAtATime,
+  updateAccessTokenAutomaticallyRevokedTimestamp,
 } from "@/src/utils/db/auth/db_queries";
 import { executeDatabaseQuery } from "@/src/utils/db/db";
 
@@ -51,11 +53,23 @@ export async function requestCreateAccessToken(
 }
 
 // RETURNS SERVER TYPE WITH FULL DATA THAT CLIENT SHOULDN'T NECESSARILY KNOW ABOUT - NEVER EXPOSE TO CLIENT!
-export async function requestDeleteAccessToken(
+export async function requestUpdateAccessTokenManuallyRevokedTimestamp(
   token: string
 ): Promise<ServerDatabaseQueryResult<void>> {
-  return await executeDatabaseQuery(() => deleteAccessToken(token));
+  return await executeDatabaseQuery(() =>
+    updateAccessTokenManuallyRevokedTimestamp(token)
+  );
 }
+
+// RETURNS SERVER TYPE WITH FULL DATA THAT CLIENT SHOULDN'T NECESSARILY KNOW ABOUT - NEVER EXPOSE TO CLIENT!
+export async function requestUpdateAccessTokenAutomaticallyRevokedTimestamp(
+  token: string
+): Promise<ServerDatabaseQueryResult<void>> {
+  return await executeDatabaseQuery(() =>
+    updateAccessTokenAutomaticallyRevokedTimestamp(token)
+  );
+}
+
 // RETURNS SERVER TYPE WITH FULL DATA THAT CLIENT SHOULDN'T NECESSARILY KNOW ABOUT - NEVER EXPOSE TO CLIENT!
 export async function requestGetAccountCreationCode(
   code: string
@@ -121,4 +135,11 @@ export async function requestUpdateDefaultTokenExpiry(
   return await executeDatabaseQuery(() =>
     updateDefaultTokenExpiry(userId, expirySeconds)
   );
+}
+
+export async function requestUpdateMaxTokensAtATime(
+  userId: string,
+  max: number | null
+): Promise<ServerDatabaseQueryResult<void>> {
+  return await executeDatabaseQuery(() => updateMaxTokensAtATime(userId, max));
 }

@@ -10,6 +10,7 @@ import {
   ServerDatabaseQueryResult,
   ServerUser,
 } from "@/src/utils/server_types";
+import { invalidateTokensIfOverMaxAmount } from "@/src/actions/user-actions";
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status
 
@@ -53,6 +54,22 @@ export async function POST(req: Request) {
       { error: "Invalid login credentials." },
       { status: 401 }
     );
+  }
+
+  // Delete older tokens if maxTokensAtATime setting is turned on
+  if (user.max_tokens_at_a_time) {
+    const request = await invalidateTokensIfOverMaxAmount(
+      user.id,
+      user.max_tokens_at_a_time,
+      true
+    );
+    if (!request.success) {
+      return NextResponse.json(
+        { error: "Could not generate access token." },
+        { status: 500 }
+      );
+      // Todo: if this happens, delete the token
+    }
   }
 
   // Generate token

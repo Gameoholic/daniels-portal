@@ -10,7 +10,6 @@ import {
 } from "@/src/utils/client_types";
 import { ServerAccessToken, ServerExpense } from "@/src/utils/server_types";
 import {
-  requestDeleteAccessToken,
   requestGetAccessToken,
   requestUpdateAccessTokenLastUseTimestamp,
 } from "@/src/utils/db/auth/db_actions";
@@ -30,6 +29,32 @@ export const getAndVerifyAccessToken = cache(
       };
     }
 
+    // THIS WILL VERIFY THE TOKEN IS ACTUALLY VALID and not expired/revoked
+    const accessTokenRequest = await requestGetAccessToken(token);
+    if (!accessTokenRequest.success) {
+      return accessTokenRequest;
+    }
+    if (accessTokenRequest.result.expiration_timestamp <= new Date()) {
+      return {
+        success: false,
+        errorString: "Access token has expired. Please log in again.",
+      };
+    }
+    if (accessTokenRequest.result.manually_revoked_timestamp) {
+      return {
+        success: false,
+        errorString:
+          "Access token was revoked due to user action. Please log in again.",
+      };
+    }
+    if (accessTokenRequest.result.automatically_revoked_timestamp) {
+      return {
+        success: false,
+        errorString:
+          "Access token was revoked automatically due to your account's security policy. Please log in again.",
+      };
+    }
+
     // UPDATE ACCESS TOKEN LAST USE TIMESTAMP
     const updateAccessTokenLastUseTimestampRequest =
       await requestUpdateAccessTokenLastUseTimestamp(token);
@@ -40,7 +65,6 @@ export const getAndVerifyAccessToken = cache(
       };
     }
 
-    // THIS WILL VERIFY THE TOKEN IS ACTUALLY VALID AND RETURN FURTHER DATA
-    return await requestGetAccessToken(token);
+    return accessTokenRequest;
   }
 );

@@ -35,8 +35,7 @@ export async function middleware(req: NextRequest) {
     // todo this check shouldn't be separate to the one below with the error codes, should be centralized
     path === "/" &&
     getAccessTokenRequest &&
-    getAccessTokenRequest.success &&
-    getAccessTokenRequest.result.expiration_timestamp > new Date()
+    getAccessTokenRequest.success
   ) {
     return NextResponse.redirect(new URL("/home", req.url));
   }
@@ -56,17 +55,17 @@ export async function middleware(req: NextRequest) {
   // Verify token validity
   if (!getAccessTokenRequest.success) {
     return NextResponse.json(
-      { error: "Invalid access token." },
+      { error: getAccessTokenRequest.errorString }, // todo: should error strings be public to users? we should have a table that converts private error strings to public ones, changable in config. across entire wbesite
       { status: 401 }
     );
   }
-  const accessToken = getAccessTokenRequest.result;
-  if (accessToken.expiration_timestamp < new Date()) {
-    return NextResponse.json(
-      { error: "Access token expired. Please log in again." },
-      { status: 401 }
-    );
-  }
+  // const accessToken = getAccessTokenRequest.result;
+  // if (accessToken.expiration_timestamp < new Date()) {
+  //   return NextResponse.json(
+  //     { error: "Access token expired. Please log in again." },
+  //     { status: 401 }
+  //   );
+  // }
 
   // SEMI-PRIVATE PATHS only allow if user is logged in, regardless of permission
   if (path === "/home") {

@@ -39,6 +39,8 @@ export interface ServerAccessToken {
   creation_timestamp: Date;
   expiration_timestamp: Date;
   last_use_timestamp: Date | null;
+  manually_revoked_timestamp: Date | null;
+  automatically_revoked_timestamp: Date | null;
 }
 
 // todo - client can access this type..

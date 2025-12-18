@@ -23,7 +23,12 @@ export default function UserSettings() {
     <section>
       <Suspense
         fallback={
-          <AdvancedSettings user={null} loading={true} errorString="" />
+          <AdvancedSettings
+            user={null}
+            tokenAmount={null}
+            loading={true}
+            errorString=""
+          />
         }
       >
         <UserDataLoader />
@@ -35,12 +40,19 @@ export default function UserSettings() {
 async function UserDataLoader() {
   // Avoiding waterfall by running both actions at the same time
   const userActionPromise = getUserAction();
+  const userAccessTokensPromise = getUserAccessTokensAction();
 
-  const [userAction] = await Promise.all([userActionPromise]);
+  const [userAction, userAccessTokens] = await Promise.all([
+    userActionPromise,
+    userAccessTokensPromise,
+  ]);
 
   return (
     <AdvancedSettings
       user={userAction.success ? userAction.result : null}
+      tokenAmount={
+        userAccessTokens.success ? userAccessTokens.result.length : null
+      }
       loading={false}
       errorString={userAction.success ? "" : userAction.errorString}
     />

@@ -97,7 +97,9 @@ const initDbTables = async (): Promise<void> => {
         user_id UUID NOT NULL,
         expiration_timestamp TIMESTAMP NOT NULL,
         creation_timestamp TIMESTAMP NOT NULL,
-        last_use_timestamp TIMESTAMP
+        last_use_timestamp TIMESTAMP,
+        manually_revoked_timestamp TIMESTAMP,
+        automatically_revoked_timestamp TIMESTAMP
       );
     `;
 
