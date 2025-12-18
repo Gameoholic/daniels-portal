@@ -176,6 +176,23 @@ export async function updateUserLastLoginTimestamp(
   }
 }
 
+export async function updateDefaultTokenExpiry(
+  userId: string,
+  expirySeconds: number
+): Promise<void> {
+  try {
+    const result = await db.query(
+      "UPDATE users SET default_token_expiry_seconds = $1 WHERE id = $2",
+      [expirySeconds, userId]
+    );
+    if (result.rowCount == 0) {
+      throw Error("User doesn't exist.");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function updateAccessTokenLastUseTimestamp(
   token: string
 ): Promise<void> {

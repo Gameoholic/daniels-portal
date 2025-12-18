@@ -242,6 +242,8 @@ function AccessTokenLastUseTooltip() {
           <p className="text-wrap">
             The last time this token was used for any operation that requires
             authentication (meaning opening a page, adding/deleting data, etc.).
+            In the case that the token has already expired, this will show the
+            last attempted operation using this token.
           </p>
         </div>
       </TooltipContent>

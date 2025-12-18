@@ -26,6 +26,8 @@ export async function getExpensesAction(): Promise<
   }
   const userId: string = getAccessTokenRequest.result.user_id;
 
+  // todo: verify parameters here
+
   // Perform server-side request
   const getExpensesRequest = await requestGetExpenses(userId);
 
@@ -66,6 +68,8 @@ export async function addExpenseAction(
     return getAccessTokenRequest;
   }
   const userId: string = getAccessTokenRequest.result.user_id;
+
+  // todo: verify parameters here
 
   // Perform server-side request
   const serverExpense: ServerExpense = {

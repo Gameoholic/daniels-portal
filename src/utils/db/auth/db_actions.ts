@@ -21,6 +21,7 @@ import {
   updateUserLastLoginTimestamp,
   getUserAccessTokens,
   updateAccessTokenLastUseTimestamp,
+  updateDefaultTokenExpiry,
 } from "@/src/utils/db/auth/db_queries";
 import { executeDatabaseQuery } from "@/src/utils/db/db";
 
@@ -111,4 +112,13 @@ export async function requestGetUserAccessTokens(
   userId: string
 ): Promise<ServerDatabaseQueryResult<ServerAccessToken[]>> {
   return await executeDatabaseQuery(() => getUserAccessTokens(userId));
+}
+
+export async function requestUpdateDefaultTokenExpiry(
+  userId: string,
+  expirySeconds: number
+): Promise<ServerDatabaseQueryResult<void>> {
+  return await executeDatabaseQuery(() =>
+    updateDefaultTokenExpiry(userId, expirySeconds)
+  );
 }

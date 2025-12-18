@@ -65,6 +65,8 @@ export async function addGymWeightAction(
   }
   const userId: string = getAccessTokenRequest.result.user_id;
 
+  //todo: verify parameters here
+
   // Perform server-side request
   const serverGymWeight: ServerGymWeight = {
     user_id: userId,

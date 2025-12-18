@@ -68,8 +68,6 @@ export async function middleware(req: NextRequest) {
     );
   }
 
-  // TODO update access token last use timestamp here in db
-
   // SEMI-PRIVATE PATHS only allow if user is logged in, regardless of permission
   if (path === "/home") {
     return NextResponse.next();

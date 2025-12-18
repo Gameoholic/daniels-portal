@@ -17,6 +17,7 @@ import {
   requestGetUserAccessTokens,
   requestGetUserById,
   requestUpdateAccessTokenLastUseTimestamp,
+  requestUpdateDefaultTokenExpiry,
 } from "@/src/utils/db/auth/db_actions";
 import { cookies } from "next/headers";
 import { getAndVerifyAccessToken } from "./auth";
@@ -114,6 +115,7 @@ export async function getUserAction(): Promise<
   };
 }
 
+// Will only return non-expired access tokens
 export async function getUserAccessTokensAction(): Promise<
   ClientDatabaseQueryResult<ClientAccessToken[]>
 > {
@@ -137,12 +139,51 @@ export async function getUserAccessTokensAction(): Promise<
 
   return {
     success: true,
-    result: getUserRequest.result.map((token) => ({
-      token: token.token,
-      userId: token.user_id,
-      creationTimestamp: token.creation_timestamp,
-      expirationTimestamp: token.expiration_timestamp,
-      lastUseTimestamp: token.last_use_timestamp,
-    })),
+    result: getUserRequest.result
+      .map((token) => ({
+        token: token.token,
+        userId: token.user_id,
+        creationTimestamp: token.creation_timestamp,
+        expirationTimestamp: token.expiration_timestamp,
+        lastUseTimestamp: token.last_use_timestamp,
+      }))
+      .filter((x) => x.expirationTimestamp > new Date()), // Don't include token if it's already expired
+  };
+}
+
+export async function changeDefaultTokenExpiry(
+  seconds: number
+): Promise<ClientDatabaseQueryResult<void>> {
+  // Verify access token, get user ID from it
+  const getAccessTokenRequest = await getAndVerifyAccessToken();
+  if (!getAccessTokenRequest.success) {
+    return getAccessTokenRequest;
+  }
+  const userId: string = getAccessTokenRequest.result.user_id;
+
+  // Verify parameters are valid
+  if (seconds <= 0) {
+    return {
+      success: false,
+      errorString: "Faulty parameters.",
+    };
+  }
+
+  // Perform server-side request
+  const updateDefaultTokenExpiryRequest = await requestUpdateDefaultTokenExpiry(
+    userId,
+    seconds
+  );
+
+  // Convert server-types to client-types for safety, abstract away unneeded stuff
+  if (!updateDefaultTokenExpiryRequest.success) {
+    return {
+      success: false,
+      errorString: updateDefaultTokenExpiryRequest.errorString,
+    };
+  }
+  return {
+    success: true,
+    result: undefined, // void
   };
 }

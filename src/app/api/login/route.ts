@@ -57,8 +57,8 @@ export async function POST(req: Request) {
 
   // Generate token
   const token: string = crypto.randomBytes(64).toString("base64url");
-  const OneDayInMilliseconds = 1000 * 60 * 60 * 24;
-  const ExpiryTimestamp: number = Date.now() + OneDayInMilliseconds * 7;
+  const ExpiryTimestamp: number =
+    Date.now() + 1000 * user.default_token_expiry_seconds;
   const createAccessTokenRequest = await requestCreateAccessToken(
     token,
     user.id,
