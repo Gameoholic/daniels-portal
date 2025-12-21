@@ -163,41 +163,4 @@ const initDbTable = async (
 await verifyConnection();
 await initDbTables();
 
-export async function executeDatabaseQuery<T>(
-  queryMethod: () => Promise<T>,
-  mappedErrorCodeMessages: Record<string, string> = {},
-  unmappedErrorCodeMessage: string = "An unknown error has occurred.",
-  unknownErrorMessage1: string = "An unknown error has occurred.",
-  unknownErrorMessage2: string = "An unknown error has occurred."
-): Promise<ServerDatabaseQueryResult<T>> {
-  try {
-    let result: T = await queryMethod();
-    return { success: true, result: result };
-  } catch (error: any) {
-    // Identify error type
-    let errorMessage: string;
-    if (error instanceof DatabaseError && error.code) {
-      const mappedMessage: string | null = mappedErrorCodeMessages[error.code];
-      errorMessage = mappedMessage ?? unmappedErrorCodeMessage;
-      if (!mappedMessage) {
-        // This generally shouldn't happen so we log it
-        console.error(
-          "DB Query unhandled DatabaseError error:",
-          error.code,
-          error
-        );
-      }
-    } else if (error instanceof Error) {
-      // This should never happen
-      console.error("DB Query unknown error:", error.message, error);
-      errorMessage = unknownErrorMessage1;
-    } else {
-      // This should even more, never happen
-      console.error("DB Query unknown error:", error);
-      errorMessage = unknownErrorMessage2;
-    }
-    return { success: false, errorString: errorMessage };
-  }
-}
-
 export default db;

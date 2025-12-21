@@ -50,12 +50,12 @@ import { Separator } from "@/components/ui/separator";
 import { ReactNode, useState } from "react";
 import SensitiveComponent from "../custom/sensitive-component";
 import {
-  changeDefaultTokenExpiry,
-  changeMaxTokensAtATime,
+  changeDefaultTokenExpiryAction,
+  changeMaxTokensAtATimeAction,
   invalidateSelfAccessToken,
-  invalidateTokensIfOverMaxAmount,
+  invalidateTokensIfOverMaxAmountAction,
   logUserOut,
-} from "@/src/actions/user-actions";
+} from "@/src/actions/user-actions-old";
 import { toast } from "sonner";
 import { Router, useRouter } from "next/router";
 import {
@@ -125,15 +125,16 @@ function MaxAccessTokensAtATimeComponent({
     }
     setLoading(true);
 
-    const changeMaxTokensAction = await changeMaxTokensAtATime(
+    const changeMaxTokensAction = await changeMaxTokensAtATimeAction(
       newMaxTokensAtATime
     );
     if (newMaxTokensAtATime) {
-      const invalidateOldTokensAction = await invalidateTokensIfOverMaxAmount(
-        userId!!,
-        newMaxTokensAtATime,
-        false
-      );
+      const invalidateOldTokensAction =
+        await invalidateTokensIfOverMaxAmountAction(
+          userId!!,
+          newMaxTokensAtATime,
+          false
+        );
       if (!invalidateOldTokensAction.success) {
         setError("Couldn't update max tokens.");
         // for ALL action forms in the website we need to handle errors, so far we don't.
@@ -286,7 +287,7 @@ function DefaultTokenExpiryComponent({
     }
     setLoading(true);
 
-    const action = await changeDefaultTokenExpiry(
+    const action = await changeDefaultTokenExpiryAction(
       newExpiryValue *
         (expiryThresholds.find((x) => x.unit == newExpiryUnit)
           ?.divideSecondsBy ?? 60 * 60 * 24) // the one for days

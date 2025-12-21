@@ -10,7 +10,7 @@ import {
   ServerDatabaseQueryResult,
   ServerUser,
 } from "@/src/utils/server_types";
-import { invalidateTokensIfOverMaxAmount } from "@/src/actions/user-actions";
+import { invalidateTokensIfOverMaxAmountAction } from "@/src/actions/user-actions-old";
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status
 
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
   // Delete older tokens if maxTokensAtATime setting is turned on
   if (user.max_tokens_at_a_time) {
-    const request = await invalidateTokensIfOverMaxAmount(
+    const request = await invalidateTokensIfOverMaxAmountAction(
       user.id,
       user.max_tokens_at_a_time,
       true

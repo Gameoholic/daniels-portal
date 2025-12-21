@@ -24,6 +24,7 @@ import {
   updateDefaultTokenExpiry,
   updateMaxTokensAtATime,
   updateAccessTokenAutomaticallyRevokedTimestamp,
+  getAllUsers,
 } from "@/src/utils/db/auth/db_queries";
 import { executeDatabaseQuery } from "@/src/utils/db/db";
 
@@ -32,6 +33,13 @@ export async function requestGetUserByUsername(
   username: string
 ): Promise<ServerDatabaseQueryResult<ServerUser>> {
   return await executeDatabaseQuery(() => getUserByUsername(username), {});
+}
+
+// RETURNS SERVER TYPE WITH FULL DATA THAT CLIENT SHOULDN'T NECESSARILY KNOW ABOUT - NEVER EXPOSE TO CLIENT!
+export async function requestGetAllUsers(): Promise<
+  ServerDatabaseQueryResult<ServerUser[]>
+> {
+  return await executeDatabaseQuery(() => getAllUsers(), {});
 }
 
 // RETURNS SERVER TYPE WITH FULL DATA THAT CLIENT SHOULDN'T NECESSARILY KNOW ABOUT - NEVER EXPOSE TO CLIENT!

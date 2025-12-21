@@ -21,15 +21,6 @@ export async function middleware(req: NextRequest) {
   const getAccessTokenRequest: ServerDatabaseQueryResult<ServerAccessToken> | null =
     token == null ? null : await getAndVerifyAccessToken();
 
-  // PUBLIC PATHS Allow public paths regardless of whether logged in or not
-  const publicPaths = [
-    "/",
-    "/api/login",
-    "/api/create-account",
-    "/api/verify-account-creation-code",
-    "/favicon.ico",
-  ];
-
   // Special case, redirect to home if already logged in:
   if (
     // todo this check shouldn't be separate to the one below with the error codes, should be centralized
@@ -39,6 +30,16 @@ export async function middleware(req: NextRequest) {
   ) {
     return NextResponse.redirect(new URL("/home", req.url));
   }
+
+  // PUBLIC PATHS Allow public paths regardless of whether logged in or not
+  const publicPaths = [
+    "/",
+    "/api/login",
+    "/api/create-account",
+    "/api/verify-account-creation-code",
+    "/favicon.ico",
+  ];
+
   if (publicPaths.includes(path) || path.startsWith("/_next/")) {
     return NextResponse.next();
   }

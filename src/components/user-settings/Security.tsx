@@ -42,7 +42,7 @@ import SensitiveComponent from "../custom/sensitive-component";
 import {
   invalidateSelfAccessToken,
   logUserOut,
-} from "@/src/actions/user-actions";
+} from "@/src/actions/user-actions-old";
 import { toast } from "sonner";
 import { Router, useRouter } from "next/router";
 

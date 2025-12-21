@@ -6,7 +6,7 @@ import {
 import { getExpensesAction } from "@/src/actions/expenses";
 import { Suspense } from "react";
 import { CircleQuestionMark } from "lucide-react"; // https://lucide.dev/icons/
-import { getUserAction } from "@/src/actions/user-actions";
+import { getUserAction } from "@/src/actions/user-actions-old";
 import { ClientUser } from "@/src/utils/client_types";
 import HomeWelcome from "@/src/components/home/Home";
 

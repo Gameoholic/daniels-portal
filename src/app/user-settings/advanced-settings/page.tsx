@@ -2,7 +2,7 @@ import { getAndVerifyAccessToken } from "@/src/actions/auth";
 import {
   getUserAccessTokensAction,
   getUserAction,
-} from "@/src/actions/user-actions";
+} from "@/src/actions/user-actions-old";
 import Security from "@/src/components/user-settings/Security";
 import { ClientUser } from "@/src/utils/client_types";
 import { Suspense } from "react";

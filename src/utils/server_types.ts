@@ -43,6 +43,43 @@ export interface ServerAccessToken {
   automatically_revoked_timestamp: Date | null;
 }
 
+export type AccessTokenValidationResult =
+  | { valid: true }
+  | { valid: false; reason: AccessTokenInvalidReason };
+
+export enum AccessTokenInvalidReason {
+  EXPIRED,
+  MANUALLY_REVOKED,
+  AUTOMATICALLY_REVOKED,
+}
+
+export function isAccessTokenValid(
+  token: ServerAccessToken
+): AccessTokenValidationResult {
+  if (token.manually_revoked_timestamp) {
+    return {
+      valid: false,
+      reason: AccessTokenInvalidReason.MANUALLY_REVOKED,
+    };
+  }
+
+  if (token.automatically_revoked_timestamp) {
+    return {
+      valid: false,
+      reason: AccessTokenInvalidReason.AUTOMATICALLY_REVOKED,
+    };
+  }
+
+  if (token.expiration_timestamp <= new Date()) {
+    return {
+      valid: false,
+      reason: AccessTokenInvalidReason.EXPIRED,
+    };
+  }
+
+  return { valid: true };
+}
+
 // todo - client can access this type..
 export interface ServerAccountCreationCode {
   code: string;

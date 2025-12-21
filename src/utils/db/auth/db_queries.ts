@@ -24,6 +24,17 @@ export async function getUserByUsername(username: string): Promise<ServerUser> {
   }
 }
 
+export async function getAllUsers(): Promise<ServerUser[]> {
+  try {
+    const result: QueryResult<ServerUser> = await db.query<ServerUser>(
+      "SELECT * FROM users"
+    );
+    return result.rows;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function getUserById(id: string): Promise<ServerUser> {
   try {
     const result: QueryResult<ServerUser> = await db.query<ServerUser>(
