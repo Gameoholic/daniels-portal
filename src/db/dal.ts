@@ -102,6 +102,64 @@ export async function executeDatabaseQuery<T, Args extends any[]>(
   }
 }
 
+/**
+ * Executes a database query and returns error/success as well as the result if succeeded.
+ * This is designed to be used by server for actions that do not have a user token yet (for example, login or register requests..)
+ *
+ * IMPORTANT!!! This method DOES NOT:
+ * - Check for permissions
+ * - Check whether the provided token matches the request parameters (eg. a user could use their own token to request to update another user's expense, as long as they know the expense ID. The user's own token is valid, therefore we don't return an error.).
+ */
+export async function executeDatabaseQueryWithoutToken<T, Args extends any[]>(
+  queryMethod: (
+    scope: SecureDBScope,
+    ...args: Args
+  ) => Promise<T>,
+  args: Args,
+  mappedErrorCodeMessages: Record<string, string> = {},
+  unmappedErrorCodeMessage: string = "An unknown error has occurred.",
+  unknownErrorMessage1: string = "An unknown error has occurred.",
+  unknownErrorMessage2: string = "An unknown error has occurred."
+): Promise<DatabaseQueryResult<T>> {
+  /// todo: this will be used for databse queries without user token
+  // do this for login and register
+  // and check if we can use this for middleware or smthn cause right now we just call
+  // the function directly and i would prefer not to do that.
+  try {
+    // Finally, execute the query
+    let result: T = await queryMethod(
+      {} as SecureDBScope, // Creates the scope
+      ...args
+    );
+
+    return { success: true, result: result };
+  } catch (error: any) {
+    // Identify error type
+    let errorMessage: string;
+    if (error instanceof DatabaseError && error.code) {
+      const mappedMessage: string | null = mappedErrorCodeMessages[error.code];
+      errorMessage = mappedMessage ?? unmappedErrorCodeMessage;
+      if (!mappedMessage) {
+        // This generally shouldn't happen so we log it
+        console.error(
+          "DB Query unhandled DatabaseError error:",
+          error.code,
+          error
+        );
+      }
+    } else if (error instanceof Error) {
+      // This should never happen
+      console.error("DB Query unknown error:", error.message, error);
+      errorMessage = unknownErrorMessage1;
+    } else {
+      // This should even more, never happen
+      console.error("DB Query unknown error:", error);
+      errorMessage = unknownErrorMessage2;
+    }
+    return { success: false, errorString: errorMessage };
+  }
+}
+
 export async function verifyAccessTokenFromBrowser(): Promise<
   DatabaseQueryResult<ServerAccessToken>
 > {
