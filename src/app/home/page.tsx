@@ -3,12 +3,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { getExpensesAction } from "@/src/actions/expenses";
 import { Suspense } from "react";
 import { CircleQuestionMark } from "lucide-react"; // https://lucide.dev/icons/
-import { getUserAction } from "@/src/actions/user-actions-old";
 import { ClientUser } from "@/src/utils/client_types";
 import HomeWelcome from "@/src/components/home/Home";
+import { getUserAction } from "@/src/actions/per-page/home";
 
 // Can issue account creation codes by email. User will be able to delete these codes.
 // Can manage and delete all account creation codes, even those issued by other users.

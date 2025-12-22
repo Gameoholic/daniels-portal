@@ -14,11 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/src/components/custom-shadcn/card";
-import {
-  ClientAccessToken,
-  ClientExpense,
-  ClientUser,
-} from "../../utils/client_types";
+
 import {
   Landmark,
   Info,
@@ -39,12 +35,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ReactNode, useState } from "react";
 import SensitiveComponent from "../custom/sensitive-component";
-import {
-  invalidateSelfAccessToken,
-  logUserOut,
-} from "@/src/actions/user-actions-old";
 import { toast } from "sonner";
 import { Router, useRouter } from "next/router";
+import {
+  revokeSelfTokenAction,
+  revokeTokenAction,
+  UserSettingsActions_GetUserAccessTokensAction_Result,
+  UserSettingsActions_GetUserAction_Result,
+} from "@/src/actions/per-page/user-settings";
 
 export default function Security({
   user,
@@ -53,8 +51,8 @@ export default function Security({
   loading,
   errorString,
 }: {
-  user: ClientUser | null;
-  accessTokens: ClientAccessToken[] | null;
+  user: UserSettingsActions_GetUserAction_Result | null;
+  accessTokens: UserSettingsActions_GetUserAccessTokensAction_Result[] | null;
   currentAccessToken: string | null;
   loading: boolean;
   errorString: string;
@@ -154,9 +152,9 @@ function TokenRow({
     setRevoking(true);
     try {
       if (isCurrentlyUsedToken) {
-        await logUserOut();
+        await revokeSelfTokenAction();
       } else {
-        await invalidateSelfAccessToken(token);
+        await revokeTokenAction(token);
       }
       toast("Revoked token", {
         description: "Successfully revoked this token.",

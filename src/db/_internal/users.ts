@@ -1,0 +1,73 @@
+import "server-only";
+
+import db from "../db";
+import { SecureDBScope } from "../dal";
+import { ServerUser } from "@/src/db/_internal/server_types";
+import { QueryResult } from "pg";
+
+/**
+ * Updates the default_token_expiry_seconds field of a user.
+ *
+ * Besides permissions, no further checks are required.
+ */
+export async function updateDefaultTokenExpiry(
+  _scope: SecureDBScope,
+  requesterUserId: string,
+  expirySeconds: number
+): Promise<void> {
+  try {
+    const result = await db.query(
+      "UPDATE users SET default_token_expiry_seconds = $1 WHERE id = $2",
+      [expirySeconds, requesterUserId]
+    );
+    if (result.rowCount == 0) {
+      throw Error("User doesn't exist.");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Updates the max_tokens_at_a_time field of a user.
+ *
+ * Besides permissions, no further checks are required.
+ */
+export async function updateMaxTokensAtATime(
+  _scope: SecureDBScope,
+  requesterUserId: string,
+  max: number | null
+): Promise<void> {
+  try {
+    const result = await db.query(
+      "UPDATE users SET max_tokens_at_a_time = $1 WHERE id = $2",
+      [max, requesterUserId]
+    );
+    if (result.rowCount == 0) {
+      throw Error("User doesn't exist.");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Returns the user if it exists.
+ */
+export async function getUser(
+  _scope: SecureDBScope,
+  requesterUserId: string
+): Promise<ServerUser> {
+  try {
+    const result: QueryResult<ServerUser> = await db.query<ServerUser>(
+      "SELECT * FROM users WHERE id = $1",
+      [requesterUserId]
+    );
+    if (result.rows.length == 0) {
+      throw Error("User doesn't exist.");
+    }
+    return result.rows[0];
+  } catch (error) {
+    throw error;
+  }
+}

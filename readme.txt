@@ -19,8 +19,3 @@ server action order:
 - call query/ies (make sure the query checks for authenticity between user and matched data)
 - if returns non-void type, convert to minimized-data type
 
-
-TODO:
-eslint and taint for the servertypes or whatevert it's called
-Check if there's a way to make sure we can't call the server queires directly, but only through executeServerQuery() through server actions.
-CHECK.

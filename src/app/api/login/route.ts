@@ -9,7 +9,7 @@ import crypto from "crypto";
 import {
   ServerDatabaseQueryResult,
   ServerUser,
-} from "@/src/utils/server_types";
+} from "@/src/db/_internal/server_types";
 import { invalidateTokensIfOverMaxAmountAction } from "@/src/actions/user-actions-old";
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status

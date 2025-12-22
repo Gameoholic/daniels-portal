@@ -1,20 +1,14 @@
-"use server";
-import "server-only";
+import { getUserPermissionsAction } from "@/src/actions/permissions";
 import { SidebarClient, SidebarItem } from "./SidebarClient";
-import { getAndVerifyAccessToken } from "@/src/actions/auth";
-import { requestGetUserPermissions } from "@/src/utils/db/auth/db_actions";
+import { getUserPermissions } from "@/src/db/_internal/permissions";
 
 export async function SidebarServer() {
-  const tokenResult = await getAndVerifyAccessToken();
-  if (!tokenResult.success) return null;
-  const userId = tokenResult.result.user_id;
+  const getUserPermissionsActionResult = await getUserPermissionsAction();
 
-  const permissionsResult = await requestGetUserPermissions(userId);
-  if (!permissionsResult.success) return null;
-
-  const userPermissions = new Set(
-    permissionsResult.result.map((p) => p.permission_name)
-  );
+  if (!getUserPermissionsActionResult.success) {
+    return null;
+  }
+  const userPermissions = getUserPermissionsActionResult.result;
 
   // All available nav items, regardless of user permissions
   const navItems: (SidebarItem & { requiredPermission: string })[] = [
@@ -64,7 +58,11 @@ export async function SidebarServer() {
 
   // Filter available nav items by user permissions
   const navItemsForUser: SidebarItem[] = navItems
-    .filter((item) => userPermissions.has(item.requiredPermission))
+    .filter((item) =>
+      userPermissions.filter(
+        (permission) => permission.permissionName === item.requiredPermission
+      )
+    )
     .map(({ requiredPermission, ...clientItem }) => clientItem); // remove requiredPermission
 
   return <SidebarClient navItems={navItemsForUser} />;

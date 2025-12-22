@@ -2,23 +2,25 @@
 import {
   executeDatabaseQuery,
   getAccessTokenFromBrowser,
-  SecureDBScope,
-} from "../db/dal";
+  DatabaseQueryResult,
+} from "@/src/db/dal";
 import {
   getUserAccessTokens,
   updateAccessTokenAutomaticallyRevokedTimestamp,
+  updateAccessTokenManuallyRevokedTimestamp,
+} from "@/src/db/_internal/access-tokens";
+import {
+  isAccessTokenValid,
+  ServerUser,
+} from "@/src/db/_internal/server_types";
+import { cookies } from "next/headers";
+import {
+  getUser,
   updateDefaultTokenExpiry,
   updateMaxTokensAtATime,
-} from "../db/_internal/user-settings";
-import {
-  ClientAccessToken,
-  ClientDatabaseQueryResult,
-} from "../utils/client_types";
-import { isAccessTokenValid } from "../utils/server_types";
+} from "@/src/db/_internal/users";
 
 //todo: check permissions
-//todo: custom type for return result.
-// todo: check requester id if needed.
 
 export interface UserSettingsActions_GetUserAccessTokensAction_Result {
   token: string;
@@ -30,12 +32,8 @@ export interface UserSettingsActions_GetUserAccessTokensAction_Result {
  * @returns Only valid (non-expired and non-revoked) access tokens
  */
 export async function getUserAccessTokensAction(): Promise<
-  ClientDatabaseQueryResult<
-    UserSettingsActions_GetUserAccessTokensAction_Result[]
-  >
+  DatabaseQueryResult<UserSettingsActions_GetUserAccessTokensAction_Result[]>
 > {
-  getUserAccessTokens({} as SecureDBScope, ""); // TODO REMVOE THISSSSSSSSSSSSSSSSSSSSSSSSSSSSSSsssssssssssssssssss
-
   // Get all user's access tokens
   const getUserAccessTokensQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
@@ -48,8 +46,8 @@ export async function getUserAccessTokensAction(): Promise<
 
   // Filter out invalid access tokens
   const allAccessTokens = getUserAccessTokensQuery.result;
-  const onlyValidAccessTokens = allAccessTokens.filter((x) =>
-    isAccessTokenValid(x)
+  const onlyValidAccessTokens = allAccessTokens.filter(
+    (x) => isAccessTokenValid(x).valid
   );
   // Minimize data passed to client to only necessary data
   const minimizedDataAccessTokens = onlyValidAccessTokens.map((x) => ({
@@ -75,7 +73,7 @@ export async function getUserAccessTokensAction(): Promise<
 export async function invalidateTokensIfOverMaxAmountAction(
   maxTokensAllowed: number,
   plusOneToken: boolean
-): Promise<ClientDatabaseQueryResult<void>> {
+): Promise<DatabaseQueryResult<void>> {
   // Validate passed argument
   if (maxTokensAllowed <= 0) {
     return {
@@ -93,15 +91,17 @@ export async function invalidateTokensIfOverMaxAmountAction(
   if (!getUserAccessTokensQuery.success) {
     return { success: false, errorString: "Couldn't revoke access token." };
   }
-  const accessTokens = getUserAccessTokensQuery.result;
+  const validAccessTokens = getUserAccessTokensQuery.result.filter(
+    (x) => isAccessTokenValid(x).valid
+  );
 
   // 'Automatically' revoke all tokens that go over the max allowed tokens limit
   if (plusOneToken) {
     maxTokensAllowed--;
   }
-  if (maxTokensAllowed < accessTokens.length) {
-    const amountOfTokensToRemove = accessTokens.length - maxTokensAllowed;
-    const sortedTokens = accessTokens.sort(
+  if (maxTokensAllowed < validAccessTokens.length) {
+    const amountOfTokensToRemove = validAccessTokens.length - maxTokensAllowed;
+    const sortedTokens = validAccessTokens.sort(
       (a, b) => a.creation_timestamp.getTime() - b.creation_timestamp.getTime()
     );
     for (let i = 0; i < amountOfTokensToRemove; i++) {
@@ -129,7 +129,7 @@ export async function invalidateTokensIfOverMaxAmountAction(
  */
 export async function changeDefaultTokenExpiryAction(
   seconds: number
-): Promise<ClientDatabaseQueryResult<void>> {
+): Promise<DatabaseQueryResult<void>> {
   // Verify arguments are valid
   if (seconds <= 0) {
     return {
@@ -159,7 +159,7 @@ export async function changeDefaultTokenExpiryAction(
  */
 export async function changeMaxTokensAtATimeAction(
   max: number | null
-): Promise<ClientDatabaseQueryResult<void>> {
+): Promise<DatabaseQueryResult<void>> {
   // Verify parameters are valid
   if (max != null && (max <= 0 || max > 10)) {
     return {
@@ -180,5 +180,99 @@ export async function changeMaxTokensAtATimeAction(
   return {
     success: true,
     result: undefined, // void
+  };
+}
+
+/**
+ * 'Manually' revokes a token.
+ */
+export async function revokeTokenAction(
+  token: string
+): Promise<DatabaseQueryResult<void>> {
+  const updateAccessTokenManuallyRevokedTimestampQuery =
+    await executeDatabaseQuery(
+      await getAccessTokenFromBrowser(),
+      updateAccessTokenManuallyRevokedTimestamp,
+      [token]
+    );
+
+  if (!updateAccessTokenManuallyRevokedTimestampQuery.success) {
+    return { success: false, errorString: "Couldn't revoke access token." };
+  }
+
+  return {
+    success: true,
+    result: undefined, // void
+  };
+}
+
+/**
+ * 'Manually' revokes the user's token and deletes their cookies. Used for logging out.
+ */
+export async function revokeSelfTokenAction(): Promise<
+  DatabaseQueryResult<void>
+> {
+  let token = await getAccessTokenFromBrowser();
+  if (!token) {
+    return {
+      success: false,
+      errorString: "Invalid access token.",
+    };
+  }
+  const revokeTokenActionResult = revokeTokenAction(token);
+  if (!(await revokeTokenActionResult).success) {
+    return {
+      success: false,
+      errorString: "Couldn't revoke token.",
+    };
+  }
+  (await cookies()).delete("access-token");
+  return {
+    success: true,
+    result: undefined, // void
+  };
+}
+
+export interface UserSettingsActions_GetUserAction_Result {
+  id: string;
+  email: string;
+  creationTimestamp: Date;
+  lastLoginTimestamp: Date | null;
+  defaultTokenExpirySeconds: number;
+  maxTokensAtATime: number | null;
+  username: string;
+}
+/**
+ * @returns User.
+ */
+export async function getUserAction(): Promise<
+  DatabaseQueryResult<UserSettingsActions_GetUserAction_Result>
+> {
+  // Get all user's access tokens
+  const getUserQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    getUser,
+    []
+  );
+  if (!getUserQuery.success) {
+    return getUserQuery;
+  }
+
+  const user: ServerUser = getUserQuery.result;
+
+  // Minimize data passed to client to only necessary data
+  const minimizedDataUser: UserSettingsActions_GetUserAction_Result = {
+    username: user.username,
+    id: user.id,
+    email: user.email,
+    creationTimestamp: user.creation_timestamp,
+    lastLoginTimestamp: user.last_login_timestamp,
+    defaultTokenExpirySeconds: user.default_token_expiry_seconds,
+    maxTokensAtATime: user.max_tokens_at_a_time,
+  };
+
+  return {
+    success: true,
+    result: minimizedDataUser,
   };
 }

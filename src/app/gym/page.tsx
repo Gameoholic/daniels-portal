@@ -32,8 +32,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { getGymWeightsAction } from "@/src/actions/gym";
 import GymWeights from "@/src/components/gym/GymWeights";
+import { getUserGymWeightsAction } from "@/src/actions/per-page/gym";
 
 function Weights() {
   return (
@@ -62,7 +62,7 @@ export default function Home() {
 }
 
 export async function GymWeightsLoader() {
-  const weights = await getGymWeightsAction();
+  const weights = await getUserGymWeightsAction();
   //await new Promise((resolve) => setTimeout(resolve, 500));
   return (
     <GymWeights

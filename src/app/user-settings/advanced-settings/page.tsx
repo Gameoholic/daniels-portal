@@ -1,13 +1,11 @@
-import { getAndVerifyAccessToken } from "@/src/actions/auth";
-import {
-  getUserAccessTokensAction,
-  getUserAction,
-} from "@/src/actions/user-actions-old";
 import Security from "@/src/components/user-settings/Security";
-import { ClientUser } from "@/src/utils/client_types";
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import AdvancedSettings from "@/src/components/user-settings/AdvancedSettings";
+import {
+  getUserAccessTokensAction,
+  getUserAction,
+} from "@/src/actions/per-page/user-settings";
 
 // Can issue account creation codes by email. User will be able to delete these codes.
 // Can manage and delete all account creation codes, even those issued by other users.

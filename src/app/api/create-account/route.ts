@@ -8,7 +8,7 @@ import {
 } from "@/src/utils/db/auth/db_actions";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
-import { ServerDatabaseQueryResult } from "@/src/utils/server_types";
+import { ServerDatabaseQueryResult } from "@/src/db/_internal/server_types";
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status
 

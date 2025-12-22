@@ -1,11 +1,28 @@
 import "server-only";
 
-// file 1 (internal stuff) - assumes userid is authentic and belongs to requester. does not check permissions. some functions may check requester user id.
-
 import { QueryResult } from "pg";
-import { ServerAccessToken } from "../../utils/server_types";
-import db from "../../utils/db/db";
+import { ServerAccessToken } from "./server_types";
+import db from "../db";
 import { SecureDBScope } from "../dal";
+
+export async function getAccessToken(
+  _scope: SecureDBScope,
+  token: string
+): Promise<ServerAccessToken> {
+  try {
+    const result: QueryResult<ServerAccessToken> =
+      await db.query<ServerAccessToken>(
+        "SELECT * FROM ACCESS_TOKENS WHERE token = $1",
+        [token]
+      );
+    if (result.rows.length == 0) {
+      throw Error("No token exist.");
+    }
+    return result.rows[0];
+  } catch (error) {
+    throw error;
+  }
+}
 
 /**
  * Returns all access tokens for user, regardless of whether the token is revoked or expired
@@ -75,52 +92,6 @@ export async function updateAccessTokenAutomaticallyRevokedTimestamp(
     );
     if (result.rowCount == 0) {
       throw Error("Token not found.");
-    }
-  } catch (error) {
-    throw error;
-  }
-}
-
-/**
- * Updates the default_token_expiry_seconds field of a user.
- *
- * Besides permissions, no further checks are required.
- */
-export async function updateDefaultTokenExpiry(
-  _scope: SecureDBScope,
-  requesterUserId: string,
-  expirySeconds: number
-): Promise<void> {
-  try {
-    const result = await db.query(
-      "UPDATE users SET default_token_expiry_seconds = $1 WHERE id = $2",
-      [expirySeconds, requesterUserId]
-    );
-    if (result.rowCount == 0) {
-      throw Error("User doesn't exist.");
-    }
-  } catch (error) {
-    throw error;
-  }
-}
-
-/**
- * Updates the max_tokens_at_a_time field of a user.
- *
- * Besides permissions, no further checks are required.
- */
-export async function updateMaxTokensAtATime(
-  _scope: SecureDBScope,
-  requesterUserId: string,
-  max: number | null
-): Promise<void> {
-  try {
-    const result = await db.query(
-      "UPDATE users SET max_tokens_at_a_time = $1 WHERE id = $2",
-      [max, requesterUserId]
-    );
-    if (result.rowCount == 0) {
-      throw Error("User doesn't exist.");
     }
   } catch (error) {
     throw error;

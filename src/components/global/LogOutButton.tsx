@@ -1,15 +1,15 @@
 "use client";
 
 import { LogOut, CheckCircle2Icon, AlertCircleIcon } from "lucide-react"; // https://lucide.dev/icons/
-import { logUserOut } from "@/src/actions/user-actions-old";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { revokeSelfTokenAction } from "@/src/actions/per-page/user-settings";
 
 export default function LogOutButton() {
   const router = useRouter();
 
   async function logOut() {
-    const result = await logUserOut();
+    const result = await revokeSelfTokenAction();
     if (result.success) {
       router.push("/");
       toast("Logged out", {

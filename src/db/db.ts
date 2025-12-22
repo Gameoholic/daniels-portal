@@ -1,6 +1,6 @@
 import "server-only";
 import { Pool, QueryResult, QueryResultRow, DatabaseError } from "pg";
-import { ServerDatabaseQueryResult } from "../server_types";
+import { ServerDatabaseQueryResult } from "./_internal/server_types";
 
 const pool = new Pool({
   user: process.env.DB_USER,

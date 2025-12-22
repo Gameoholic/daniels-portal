@@ -14,11 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/src/components/custom-shadcn/card";
-import {
-  ClientAccessToken,
-  ClientExpense,
-  ClientUser,
-} from "../../utils/client_types";
+
 import {
   Landmark,
   Info,
@@ -49,13 +45,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ReactNode, useState } from "react";
 import SensitiveComponent from "../custom/sensitive-component";
-import {
-  changeDefaultTokenExpiryAction,
-  changeMaxTokensAtATimeAction,
-  invalidateSelfAccessToken,
-  invalidateTokensIfOverMaxAmountAction,
-  logUserOut,
-} from "@/src/actions/user-actions-old";
 import { toast } from "sonner";
 import { Router, useRouter } from "next/router";
 import {
@@ -68,6 +57,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import {
+  changeDefaultTokenExpiryAction,
+  changeMaxTokensAtATimeAction,
+  invalidateTokensIfOverMaxAmountAction,
+  UserSettingsActions_GetUserAction_Result,
+} from "@/src/actions/per-page/user-settings";
 
 export default function AdvancedSettings({
   user,
@@ -75,7 +70,7 @@ export default function AdvancedSettings({
   loading,
   errorString,
 }: {
-  user: ClientUser | null;
+  user: UserSettingsActions_GetUserAction_Result | null;
   tokenAmount: number | null;
   loading: boolean;
   errorString: string;
@@ -130,11 +125,7 @@ function MaxAccessTokensAtATimeComponent({
     );
     if (newMaxTokensAtATime) {
       const invalidateOldTokensAction =
-        await invalidateTokensIfOverMaxAmountAction(
-          userId!!,
-          newMaxTokensAtATime,
-          false
-        );
+        await invalidateTokensIfOverMaxAmountAction(newMaxTokensAtATime, false);
       if (!invalidateOldTokensAction.success) {
         setError("Couldn't update max tokens.");
         // for ALL action forms in the website we need to handle errors, so far we don't.

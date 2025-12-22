@@ -29,13 +29,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { HomeActions_GetUserAction_Result } from "@/src/actions/per-page/home";
 
 export default function HomeWelcome({
   user,
   loading,
   errorString,
 }: {
-  user: ClientUser | null;
+  user: HomeActions_GetUserAction_Result | null;
   loading: boolean;
   errorString: string;
 }) {

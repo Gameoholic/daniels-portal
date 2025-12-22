@@ -13,7 +13,6 @@ export default function AdminPanel() {
   return (
     <div>
       <p className="font-semibold text-2xl mb-2">Admin Panel</p>
-
       <div className="grid grid-cols-4 gap-4">
         <p>test</p>
       </div>

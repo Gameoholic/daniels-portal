@@ -61,23 +61,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/src/components/custom-shadcn/card";
-import { ClientGymWeight } from "@/src/utils/client_types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
-import { addGymWeightAction, deleteGymWeightAction } from "@/src/actions/gym";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import {
+  addGymWeightAction,
+  GymActions_AddGymWeight_GymWeightParameter,
+  GymActions_GetUserGymWeights_Result,
+} from "@/src/actions/per-page/gym";
 
 export default function GymWeights({
   weights,
   loading,
   errorString,
 }: {
-  weights: ClientGymWeight[];
+  weights: GymActions_GetUserGymWeights_Result[];
   loading: boolean;
   errorString: string;
 }) {
@@ -218,7 +221,7 @@ export function AddWeightDialog() {
 
     setLoading(true);
     // todo: what happens if we pass faulty parameters here? (remove the clientside checks)
-    const gymWeight: ClientGymWeight = {
+    const gymWeight: GymActions_AddGymWeight_GymWeightParameter = {
       amount: parseFloat(weight),
       timestamp: new Date(date),
     };
@@ -300,59 +303,60 @@ export function AddWeightDialog() {
 function DotWithDeleteDialog(props: any) {
   const { cx, cy, payload } = props;
   return (
-    <DeleteWeightDialog weight={payload}>
-      <circle
-        cx={cx}
-        cy={cy}
-        r={6}
-        fill="var(--chart-1)"
-        style={{ cursor: "pointer" }}
-      />
-    </DeleteWeightDialog>
+    <div></div>
+    // <DeleteWeightDialog weight={payload}>
+    //   <circle
+    //     cx={cx}
+    //     cy={cy}
+    //     r={6}
+    //     fill="var(--chart-1)"
+    //     style={{ cursor: "pointer" }}
+    //   />
+    // </DeleteWeightDialog>
   );
 }
 
-interface DeleteWeightDialogProps {
-  weight: ClientGymWeight;
-  children: React.ReactNode;
-}
+// interface DeleteWeightDialogProps {
+//   weight: ClientGymWeight;
+//   children: React.ReactNode;
+// }
 
-export function DeleteWeightDialog({
-  weight,
-  children,
-}: DeleteWeightDialogProps) {
-  const router = useRouter();
+// export function DeleteWeightDialog({
+//   weight,
+//   children,
+// }: DeleteWeightDialogProps) {
+//   const router = useRouter();
 
-  const handleDelete = async () => {
-    const result = await deleteGymWeightAction(weight);
-    if (result.success) {
-      toast("Weight deleted");
-      router.refresh();
-    } else {
-      toast("Failed to delete weight", { description: result.errorString });
-    }
-  };
+//   const handleDelete = async () => {
+//     const result = await deleteGymWeightAction(weight);
+//     if (result.success) {
+//       toast("Weight deleted");
+//       router.refresh();
+//     } else {
+//       toast("Failed to delete weight", { description: result.errorString });
+//     }
+//   };
 
-  return (
-    <Dialog>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Delete Weight Entry</DialogTitle>
-        </DialogHeader>
-        <p>
-          Are you sure you want to delete the weight {weight.amount} kg recorded
-          on {new Date(weight.timestamp).toLocaleDateString()}?
-        </p>
-        <DialogFooter className="mt-4 flex gap-2">
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-          <Button onClick={handleDelete} variant="destructive">
-            Delete
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+//   return (
+//     <Dialog>
+//       <DialogTrigger asChild>{children}</DialogTrigger>
+//       <DialogContent className="max-w-sm">
+//         <DialogHeader>
+//           <DialogTitle>Delete Weight Entry</DialogTitle>
+//         </DialogHeader>
+//         <p>
+//           Are you sure you want to delete the weight {weight.amount} kg recorded
+//           on {new Date(weight.timestamp).toLocaleDateString()}?
+//         </p>
+//         <DialogFooter className="mt-4 flex gap-2">
+//           <DialogClose asChild>
+//             <Button variant="outline">Cancel</Button>
+//           </DialogClose>
+//           <Button onClick={handleDelete} variant="destructive">
+//             Delete
+//           </Button>
+//         </DialogFooter>
+//       </DialogContent>
+//     </Dialog>
+//   );
+// }

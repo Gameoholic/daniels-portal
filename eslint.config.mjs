@@ -1,31 +1,78 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { defineConfig, globalIgnores } from "eslint/config";
+import eslintPluginNext from "@next/eslint-plugin-next";
+import eslintPluginTs from "@typescript-eslint/eslint-plugin";
+import tsParser from "@typescript-eslint/parser";
+import prettier from "eslint-config-prettier";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-
+export default defineConfig([
   {
+    files: ["**/*.{js,ts,jsx,tsx}"],
+    plugins: {
+      next: eslintPluginNext,
+      "@typescript-eslint": eslintPluginTs,
+    },
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+      },
+    },
     rules: {
+      // =====================
+      // TypeScript
+      // =====================
+      "@typescript-eslint/explicit-function-return-type": "off",
+
+      // =====================
+      // Next.js
+      // =====================
+      "next/no-img-element": "warn",
+      "next/no-css-tags": "error",
+
+      // =====================
+      // Global import restrictions
+      // =====================
       "no-restricted-imports": [
         "error",
         {
-          // "patterns" is much more powerful than "paths" for this use case
-          patterns: [
+          // Exact module paths (aliases)
+          paths: [
             {
-              // This regex matches any import ending in /dal or /dal.ts
-              // It catches @/src/db/dal, ../db/dal, ./dal, etc.
-              group: ["**/dal", "**/dal.ts"],
+              name: "@/db/_internal/server_types",
+              message:
+                "server_types is internal-only. Do not import it directly.",
+            },
+            {
+              name: "@/src/db/_internal/server_types",
+              message:
+                "server_types is internal-only. Do not import it directly.",
+            },
+          ],
+
+          // Pattern-based (relative / deep imports)
+          patterns: [
+            // Block SecureDBScope everywhere except _internal
+            {
+              group: ["**/dal", "**/dal.ts", "@/db/dal", "@/src/db/dal"],
               importNames: ["SecureDBScope"],
               message:
-                "SecureDBScope is a private type. Direct access is forbidden outside of _internal functions.",
+                "SecureDBScope access is restricted. Use executeDatabaseQuery in dal.ts.",
+            },
+
+            // Block *entire* server_types module
+            {
+              group: ["**/server_types", "**/server_types.ts"],
+              message:
+                "server_types is internal-only. Do not import it directly.",
+            },
+
+            // Block executeDatabaseQuery by default
+            {
+              group: ["**/dal", "**/dal.ts", "@/db/dal", "@/src/db/dal"],
+              importNames: ["executeDatabaseQuery"],
+              message:
+                "executeDatabaseQuery can only be used within Server Actions (src/actions).",
             },
           ],
         },
@@ -33,14 +80,52 @@ const eslintConfig = [
     },
   },
 
+  // =====================
+  // Exception: internal DB files and dal and middleware
+  // =====================
   {
-    // Make sure this path exactly matches your folder structure
-    // from the project root (where eslint.config.mjs lives)
-    files: ["**/src/db/_internal/**/*.ts", "**/db/_internal/**/*.ts"],
+    files: ["**/db/_internal/**/*.ts"],
     rules: {
       "no-restricted-imports": "off",
     },
   },
-];
+  {
+    files: ["**/db/dal.ts"],
+    rules: {
+      "no-restricted-imports": "off",
+    },
+  },
+  {
+    files: ["**/middleware.ts"],
+    rules: {
+      "no-restricted-imports": "off",
+    },
+  },
+  // =====================
+  // Exception: server actions
+  // =====================
+  {
+    files: ["**/actions/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/dal", "**/dal.ts", "@/db/dal", "@/src/db/dal"],
+              importNames: ["SecureDBScope"],
+              message:
+                "SecureDBScope access is restricted. Use executeDatabaseQuery in dal.ts.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 
-export default eslintConfig;
+  // =====================
+  // Prettier + ignores
+  // =====================
+  prettier,
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+]);

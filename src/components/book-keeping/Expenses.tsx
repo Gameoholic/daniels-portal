@@ -14,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/src/components/custom-shadcn/card";
-import { ClientExpense } from "../../utils/client_types";
 import { Landmark, Info, HandCoins, Pencil, Trash } from "lucide-react";
 import {
   Tooltip,
@@ -22,6 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ExpensesActions_GetUserExpenses_Result } from "@/src/actions/per-page/expenses";
 
 // TODO: handle error string
 export default function Expenses({
@@ -29,25 +29,34 @@ export default function Expenses({
   loading,
   errorString,
 }: {
-  expenses: ClientExpense[];
+  expenses: ExpensesActions_GetUserExpenses_Result[];
   loading: boolean;
   errorString: string;
 }) {
   const SortAscending = true;
   // Expenses sorted by a value, grouped by a different value
-  const groupedExpenses: Record<string, ClientExpense[]> = expenses
+  const groupedExpenses: Record<
+    string,
+    ExpensesActions_GetUserExpenses_Result[]
+  > = expenses
     .sort((expense1, expense2) =>
       SortAscending
         ? expense2.timestamp.getTime() - expense1.timestamp.getTime() // We sort by this value
         : expense1.timestamp.getTime() - expense2.timestamp.getTime()
     )
-    .reduce((accumulator: Record<string, ClientExpense[]>, currentExpense) => {
-      const dateString = ConvertDateToString(currentExpense.timestamp); // We group by this value
-      accumulator[dateString] = accumulator[dateString]
-        ? [...accumulator[dateString], currentExpense]
-        : [currentExpense];
-      return accumulator;
-    }, {});
+    .reduce(
+      (
+        accumulator: Record<string, ExpensesActions_GetUserExpenses_Result[]>,
+        currentExpense
+      ) => {
+        const dateString = ConvertDateToString(currentExpense.timestamp); // We group by this value
+        accumulator[dateString] = accumulator[dateString]
+          ? [...accumulator[dateString], currentExpense]
+          : [currentExpense];
+        return accumulator;
+      },
+      {}
+    );
 
   return (
     <div>
@@ -99,7 +108,7 @@ function ConvertDayOfWeekToString(day: number) {
 }
 
 function ExpenseHistoryCard(
-  groupedExpenses: Record<string, ClientExpense[]>,
+  groupedExpenses: Record<string, ExpensesActions_GetUserExpenses_Result[]>,
   loading: boolean
 ) {
   return (
@@ -125,7 +134,7 @@ function ExpenseHistoryCard(
 
 function ExpensesGroupedByDateCard(
   date: string,
-  dateExpenses: ClientExpense[],
+  dateExpenses: ExpensesActions_GetUserExpenses_Result[],
   loading: boolean
 ) {
   return (
@@ -170,7 +179,7 @@ function ExpensesGroupedByDateCard(
   );
 }
 
-function ExpenseCard(expense: ClientExpense) {
+function ExpenseCard(expense: ExpensesActions_GetUserExpenses_Result) {
   return (
     <Card className="border-2 border-dashed rounded-2xl my-3 gap-0">
       {/* Top right icons */}

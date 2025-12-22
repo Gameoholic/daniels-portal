@@ -19,7 +19,6 @@ export interface ServerExpense {
   creation_timestamp: Date;
 }
 
-// todo - client can access this type..
 export interface ServerUser {
   id: string;
   username: string;
@@ -32,7 +31,6 @@ export interface ServerUser {
   deletion_timestamp: Date | null;
 }
 
-// todo - client can access this type..
 export interface ServerAccessToken {
   token: string;
   user_id: string;

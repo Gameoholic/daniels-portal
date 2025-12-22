@@ -1,21 +1,16 @@
 import "server-only";
 
 import { DatabaseError, QueryResult } from "pg";
+import { cache } from "react";
+import { cookies } from "next/headers";
+import db from "./db";
 import {
   AccessTokenInvalidReason,
   isAccessTokenValid,
-  ServerDatabaseQueryResult,
-  ServerUser,
-} from "../utils/server_types";
-import { ClientDatabaseQueryResult } from "@/src/utils/client_types";
-import { ServerAccessToken, ServerExpense } from "@/src/utils/server_types";
-import {
-  requestGetAccessToken,
-  requestUpdateAccessTokenLastUseTimestamp,
-} from "@/src/utils/db/auth/db_actions";
-import { cache } from "react";
-import { cookies } from "next/headers";
-import db from "../utils/db/db";
+  ServerAccessToken,
+} from "./_internal/server_types";
+import { getAccessToken } from "./_internal/access-tokens";
+import { getUserPermissions } from "./_internal/permissions";
 
 declare const AuthorizedDALScope: unique symbol;
 /**
@@ -25,9 +20,14 @@ export type SecureDBScope = {
   readonly [AuthorizedDALScope]: true;
 };
 
+export type DatabaseQueryResult<T> =
+  | { success: true; result: T }
+  | { success: false; errorString: string };
+
 /**
  * Executes a database query and returns error/success as well as the result if succeeded.
  * WILL check validity of the token provided (will check whether it exists in the database and not expired/revoked, nothing further.)
+ * Will also update the last used timestamp of the token.
  *
  * IMPORTANT!!! This method DOES NOT:
  * - Check for permissions
@@ -45,7 +45,7 @@ export async function executeDatabaseQuery<T, Args extends any[]>(
   unmappedErrorCodeMessage: string = "An unknown error has occurred.",
   unknownErrorMessage1: string = "An unknown error has occurred.",
   unknownErrorMessage2: string = "An unknown error has occurred."
-): Promise<ServerDatabaseQueryResult<T>> {
+): Promise<DatabaseQueryResult<T>> {
   try {
     // Check validity of provided access token
     if (!requesterAccessToken) {
@@ -103,7 +103,7 @@ export async function executeDatabaseQuery<T, Args extends any[]>(
 }
 
 export async function verifyAccessTokenFromBrowser(): Promise<
-  ClientDatabaseQueryResult<ServerAccessToken>
+  DatabaseQueryResult<ServerAccessToken>
 > {
   return await verifyAccessToken(await getAccessTokenFromBrowser());
 }
@@ -115,7 +115,7 @@ export async function getAccessTokenFromBrowser(): Promise<string | null> {
 
 export async function verifyAccessToken(
   token: string | null
-): Promise<ClientDatabaseQueryResult<ServerAccessToken>> {
+): Promise<DatabaseQueryResult<ServerAccessToken>> {
   if (!token) {
     return {
       success: false,
@@ -123,12 +123,18 @@ export async function verifyAccessToken(
     };
   }
 
+  let accessToken;
   // THIS WILL VERIFY THE TOKEN IS ACTUALLY VALID and not expired/revoked
-  const accessTokenRequest = await requestGetAccessToken(token);
-  if (!accessTokenRequest.success) {
-    return accessTokenRequest;
+  // We use the function directly and not through executeDatabaseQuery because this function is called there!
+  try {
+    accessToken = await getAccessToken({} as SecureDBScope, token);
+  } catch (error: any) {
+    return {
+      success: false,
+      errorString: "Invalid access token.",
+    };
   }
-  const accessToken = accessTokenRequest.result;
+
   const accessTokenValidationResult = isAccessTokenValid(accessToken);
   if (!accessTokenValidationResult.valid) {
     switch (accessTokenValidationResult.reason) {
@@ -160,7 +166,10 @@ export async function verifyAccessToken(
     }
   }
 
-  return accessTokenRequest;
+  return {
+    success: true,
+    result: accessToken,
+  };
 }
 
 /**
@@ -182,4 +191,39 @@ async function updateAccessTokenLastUseTimestamp(
   } catch (error) {
     throw error;
   }
+}
+
+/**
+ *
+ * @returns Whether the user has a certain permission
+ */
+export async function checkForPermission(
+  permissionName: string
+): Promise<DatabaseQueryResult<void>> {
+  const getUserPermissionsQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    getUserPermissions,
+    []
+  );
+  if (!getUserPermissionsQuery.success) {
+    return {
+      success: false,
+      errorString: "An error has occurred.",
+    };
+  }
+  if (
+    !getUserPermissionsQuery.result.find(
+      (x) => x.permission_name == permissionName
+    )
+  ) {
+    return {
+      success: false,
+      errorString: "No permission.",
+    };
+  }
+
+  return {
+    success: true,
+    result: undefined, // void
+  };
 }

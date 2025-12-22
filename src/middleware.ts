@@ -4,29 +4,30 @@ export const runtime = "nodejs"; // https://nextjs.org/docs/app/api-reference/ed
 
 import { NextRequest, NextResponse } from "next/server";
 import {
-  requestGetAccessToken,
-  requestGetUserPermissions,
-} from "./utils/db/auth/db_actions";
+  DatabaseQueryResult,
+  SecureDBScope,
+  verifyAccessToken,
+  verifyAccessTokenFromBrowser,
+} from "./db/dal";
 import {
-  ServerAccessToken,
-  ServerDatabaseQueryResult,
-  ServerPermission,
-} from "./utils/server_types";
-import { getAndVerifyAccessToken } from "./actions/auth";
+  getUserPermissionsAction,
+  PermissionsActions_GetUserPermissionsAction_Result,
+} from "./actions/permissions";
+import { getUserPermissions } from "./db/_internal/permissions";
+import { ServerPermission } from "./db/_internal/server_types";
 
 // todo: clean up this entire logic
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const token = req.cookies.get("access-token")?.value;
-  const getAccessTokenRequest: ServerDatabaseQueryResult<ServerAccessToken> | null =
-    token == null ? null : await getAndVerifyAccessToken();
+  const verifyAccessTokenResult = await verifyAccessToken(token ?? null);
+  // also update last token use timestamp
 
   // Special case, redirect to home if already logged in:
   if (
     // todo this check shouldn't be separate to the one below with the error codes, should be centralized
     path === "/" &&
-    getAccessTokenRequest &&
-    getAccessTokenRequest.success
+    verifyAccessTokenResult.success
   ) {
     return NextResponse.redirect(new URL("/home", req.url));
   }
@@ -47,26 +48,19 @@ export async function middleware(req: NextRequest) {
   // PRIVATE PATHS and semi-private paths only allow if user logs in or has permissions
 
   // Verify access token exists
-  if (!token || !getAccessTokenRequest) {
+  if (!token) {
     return NextResponse.json(
       { error: "You must log in to access this page." },
       { status: 401 }
     );
   }
   // Verify token validity
-  if (!getAccessTokenRequest.success) {
+  if (!verifyAccessTokenResult.success) {
     return NextResponse.json(
-      { error: getAccessTokenRequest.errorString }, // todo: should error strings be public to users? we should have a table that converts private error strings to public ones, changable in config. across entire wbesite
+      { error: verifyAccessTokenResult.errorString }, // todo: should error strings be public to users? we should have a table that converts private error strings to public ones, changable in config. across entire wbesite
       { status: 401 }
     );
   }
-  // const accessToken = getAccessTokenRequest.result;
-  // if (accessToken.expiration_timestamp < new Date()) {
-  //   return NextResponse.json(
-  //     { error: "Access token expired. Please log in again." },
-  //     { status: 401 }
-  //   );
-  // }
 
   // SEMI-PRIVATE PATHS only allow if user is logged in, regardless of permission
   if (path === "/home") {
@@ -81,15 +75,20 @@ export async function middleware(req: NextRequest) {
 
   // PRIVATE PATHS only allow if has permission
   // Verify permissions:
-  const userId = getAccessTokenRequest.result.user_id;
-  const getUserPermissionsRequest = await requestGetUserPermissions(userId);
-  if (!getUserPermissionsRequest.success) {
+  const userId = verifyAccessTokenResult.result.user_id;
+  let userPermissions: ServerPermission[];
+  // We do this in a roundabout way because the executeDatabaseQuery method takes the token from the cookie directly.
+  try {
+    userPermissions = await getUserPermissions(
+      {} as SecureDBScope, // we fake the DB scope to bypass having to be in DAL to run internal methods. We ONLY do this here so it's ok. We already authenticated.
+      userId
+    );
+  } catch (error: any) {
     return NextResponse.json(
       { error: "Failed due to an internal error." },
       { status: 500 }
     );
   }
-  const userPermissions: ServerPermission[] = getUserPermissionsRequest.result;
 
   if (
     (path === "/admin" || path.startsWith("/admin")) &&
