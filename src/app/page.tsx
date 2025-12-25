@@ -27,8 +27,8 @@ import { motion } from "motion/react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
-import { requestGetAccessToken } from "../utils/db/auth/db_actions";
 import { ThemeSwitcher } from "@/src/components/global/ThemeSwitcher";
+import { loginAction } from "../actions/login";
 
 export default function Home() {
   return (
@@ -161,26 +161,25 @@ function LoginForm() {
       duration: 5000,
     });
 
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: username, password: password }),
-    });
+    const loginActionResult = await loginAction(username, password);
 
     setLoading(false);
 
-    if (res.ok) {
+    if (!loginActionResult.success) {
+      toast("Failed to log in", {
+        description: loginActionResult.errorString,
+        icon: <AlertCircleIcon className="text-error-foreground w-5 h-5" />,
+        duration: 3000,
+      });
+    } else {
+      await cookieStore.set(
+        "access-token",
+        loginActionResult.result.accessToken
+      );
       router.push("/home");
       toast("Logged in", {
         description: "Redirecting to home...",
         icon: <CheckCircle2Icon className="text-success-foreground w-5 h-5" />,
-        duration: 3000,
-      });
-    } else {
-      const data = await res.json();
-      toast("Failed to log in", {
-        description: data.error || "Unknown error.",
-        icon: <AlertCircleIcon className="text-error-foreground w-5 h-5" />,
         duration: 3000,
       });
     }

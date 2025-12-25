@@ -53,20 +53,39 @@ export async function updateMaxTokensAtATime(
 
 /**
  * Returns the user if it exists.
+ * @param userId Optional: If null, will use the requester user ID.
  */
 export async function getUser(
   _scope: SecureDBScope,
-  requesterUserId: string
+  requesterUserId: string,
+  userId?: string
 ): Promise<ServerUser> {
   try {
     const result: QueryResult<ServerUser> = await db.query<ServerUser>(
       "SELECT * FROM users WHERE id = $1",
-      [requesterUserId]
+      [userId ?? requesterUserId]
     );
     if (result.rows.length == 0) {
       throw Error("User doesn't exist.");
     }
     return result.rows[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function updateUserLastLoginTimestamp(
+  _scope: SecureDBScope,
+  requesterUserId: string
+): Promise<void> {
+  try {
+    const result = await db.query(
+      "UPDATE users SET last_login_timestamp = $1 WHERE id = $2",
+      [new Date(), requesterUserId]
+    );
+    if (result.rowCount == 0) {
+      throw Error("User doesn't exist.");
+    }
   } catch (error) {
     throw error;
   }

@@ -5,7 +5,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Suspense } from "react";
 import { CircleQuestionMark } from "lucide-react"; // https://lucide.dev/icons/
-import { ClientUser } from "@/src/utils/client_types";
 import HomeWelcome from "@/src/components/home/Home";
 import { getUserAction } from "@/src/actions/per-page/home";
 

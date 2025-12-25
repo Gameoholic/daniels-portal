@@ -7,7 +7,7 @@ import { SecureDBScope } from "../dal";
 
 export async function getUserPermissions(
   _scope: SecureDBScope,
-  userId: string
+  requesterUserId: string
 ): Promise<ServerPermission[]> {
   try {
     const result: QueryResult<ServerPermission> =
@@ -15,7 +15,7 @@ export async function getUserPermissions(
         `
         SELECT * FROM user_permissions WHERE user_id = $1
       `,
-        [userId]
+        [requesterUserId]
       );
     return result.rows;
   } catch (error) {

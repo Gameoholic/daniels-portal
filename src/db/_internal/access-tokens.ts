@@ -97,3 +97,40 @@ export async function updateAccessTokenAutomaticallyRevokedTimestamp(
     throw error;
   }
 }
+
+//todo: move the userid-less functions to their own .ts file?
+
+/**
+ * UserID-less function. CAN BE USED WITHOUT ACCESS TOKEN.
+ * Adds a new access token.
+ * Last use and creation timestamps will be set to now.
+ */
+export async function addAccessToken(
+  _scope: SecureDBScope,
+  token: string,
+  userId: string,
+  expirationTimestamp: Date
+) {
+  try {
+    const now = new Date();
+    const result = await db.query(
+      `INSERT INTO access_tokens (
+        token,
+        user_id,
+        expiration_timestamp,
+        last_use_timestamp,
+        creation_timestamp
+      )
+      VALUES (
+        $1, $2, $3, $4, $5
+      );`,
+      [token, userId, expirationTimestamp, now, now]
+    );
+    if (result.rowCount == 0) {
+      // todo: for all the insert into, is this actually useful? should we include this check? currently we only have this check  here.
+      throw Error("Token not found.");
+    }
+  } catch (error) {
+    throw error;
+  }
+}

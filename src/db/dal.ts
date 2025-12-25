@@ -10,7 +10,7 @@ import {
   ServerAccessToken,
 } from "./_internal/server_types";
 import { getAccessToken } from "./_internal/access-tokens";
-import { getUserPermissions } from "./_internal/permissions";
+import { tokenless_getUserPermissions } from "./_internal/tokenless-queries";
 
 declare const AuthorizedDALScope: unique symbol;
 /**
@@ -106,15 +106,11 @@ export async function executeDatabaseQuery<T, Args extends any[]>(
  * Executes a database query and returns error/success as well as the result if succeeded.
  * This is designed to be used by server for actions that do not have a user token yet (for example, login or register requests..)
  *
- * IMPORTANT!!! This method DOES NOT:
- * - Check for permissions
- * - Check whether the provided token matches the request parameters (eg. a user could use their own token to request to update another user's expense, as long as they know the expense ID. The user's own token is valid, therefore we don't return an error.).
+ * Do not use this function if we have a user token.
+ *
  */
 export async function executeDatabaseQueryWithoutToken<T, Args extends any[]>(
-  queryMethod: (
-    scope: SecureDBScope,
-    ...args: Args
-  ) => Promise<T>,
+  queryMethod: (scope: SecureDBScope, ...args: Args) => Promise<T>,
   args: Args,
   mappedErrorCodeMessages: Record<string, string> = {},
   unmappedErrorCodeMessage: string = "An unknown error has occurred.",
@@ -260,7 +256,7 @@ export async function checkForPermission(
 ): Promise<DatabaseQueryResult<void>> {
   const getUserPermissionsQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
-    getUserPermissions,
+    tokenless_getUserPermissions,
     []
   );
   if (!getUserPermissionsQuery.success) {

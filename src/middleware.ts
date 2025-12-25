@@ -5,16 +5,12 @@ export const runtime = "nodejs"; // https://nextjs.org/docs/app/api-reference/ed
 import { NextRequest, NextResponse } from "next/server";
 import {
   DatabaseQueryResult,
-  SecureDBScope,
+  executeDatabaseQueryWithoutToken,
   verifyAccessToken,
   verifyAccessTokenFromBrowser,
 } from "./db/dal";
-import {
-  getUserPermissionsAction,
-  PermissionsActions_GetUserPermissionsAction_Result,
-} from "./actions/permissions";
-import { getUserPermissions } from "./db/_internal/permissions";
 import { ServerPermission } from "./db/_internal/server_types";
+import { tokenless_getUserPermissions } from "./db/_internal/tokenless-queries";
 
 // todo: clean up this entire logic
 export async function middleware(req: NextRequest) {
@@ -76,19 +72,18 @@ export async function middleware(req: NextRequest) {
   // PRIVATE PATHS only allow if has permission
   // Verify permissions:
   const userId = verifyAccessTokenResult.result.user_id;
-  let userPermissions: ServerPermission[];
-  // We do this in a roundabout way because the executeDatabaseQuery method takes the token from the cookie directly.
-  try {
-    userPermissions = await getUserPermissions(
-      {} as SecureDBScope, // we fake the DB scope to bypass having to be in DAL to run internal methods. We ONLY do this here so it's ok. We already authenticated.
-      userId
-    );
-  } catch (error: any) {
+  // We do this via the without-token method and not an action because the executeDatabaseQuery method takes the token from the cookie directly.
+  const getUserPermissionsRequest = await executeDatabaseQueryWithoutToken(
+    tokenless_getUserPermissions,
+    [userId]
+  );
+  if (!getUserPermissionsRequest.success) {
     return NextResponse.json(
       { error: "Failed due to an internal error." },
       { status: 500 }
     );
   }
+  const userPermissions: ServerPermission[] = getUserPermissionsRequest.result;
 
   if (
     (path === "/admin" || path.startsWith("/admin")) &&
