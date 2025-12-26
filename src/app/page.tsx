@@ -29,6 +29,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { ThemeSwitcher } from "@/src/components/global/ThemeSwitcher";
 import { loginAction } from "../actions/login";
+import { verifyAccountCreationCodeAction } from "../actions/verify-account-creation-code";
+import { createAccountAction } from "../actions/create-account";
 
 export default function Home() {
   return (
@@ -68,29 +70,25 @@ function CreateAccountCodeForm() {
   async function handleSubmit(code: string) {
     setLoading(true);
 
-    const res = await fetch("/api/verify-account-creation-code", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accountCreationCode: code }),
-    });
+    const verifyAccountCreationCodeActionResult =
+      await verifyAccountCreationCodeAction(code);
 
     setLoading(false);
 
-    if (res.ok) {
+    if (!verifyAccountCreationCodeActionResult.success) {
+      setIsCodeCorrect(false);
+      setValue("");
+
+      toast("Failed to create account", {
+        description: verifyAccountCreationCodeActionResult.errorString,
+        icon: <AlertCircleIcon className="text-error-foreground w-5 h-5" />,
+        duration: 3000,
+      });
+    } else {
       setIsCodeCorrect(true);
       toast("Code processed successfully", {
         description: "You may now create an account.",
         icon: <CheckCircle2Icon className="text-success-foreground w-5 h-5" />,
-        duration: 3000,
-      });
-    } else {
-      setIsCodeCorrect(false);
-      setValue("");
-
-      const data = await res.json();
-      toast("Failed to create account", {
-        description: data.error || "Unknown error.",
-        icon: <AlertCircleIcon className="text-error-foreground w-5 h-5" />,
         duration: 3000,
       });
     }
@@ -245,20 +243,22 @@ function CreateAccountForm({
       duration: 5000,
     });
 
-    const res = await fetch("/api/create-account", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: username,
-        password: password,
-        email: email,
-        accountCreationCode: accountCreationCode,
-      }),
-    });
+    const createAccountActionResult = await createAccountAction(
+      username,
+      password,
+      email,
+      accountCreationCode
+    );
 
     setLoading(false);
 
-    if (res.ok) {
+    if (!createAccountActionResult.success) {
+      toast("Failed to create account", {
+        description: createAccountActionResult.errorString,
+        icon: <AlertCircleIcon className="text-error-foreground w-5 h-5" />,
+        duration: 3000,
+      });
+    } else {
       toast("Successfully created account", {
         description: "Logging in...",
         icon: <CheckCircle2Icon className="text-success-foreground w-5 h-5" />,
@@ -266,15 +266,20 @@ function CreateAccountForm({
       });
       setLoading(true);
 
-      const res2 = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username, password: password }),
-      });
+      const loginActionResult = await loginAction(username, password);
 
       setLoading(false);
-
-      if (res2.ok) {
+      if (!loginActionResult.success) {
+        toast("Failed to log in", {
+          description: loginActionResult.errorString || "Unknown error.",
+          icon: <AlertCircleIcon className="text-error-foreground w-5 h-5" />,
+          duration: 3000,
+        });
+      } else {
+        await cookieStore.set(
+          "access-token",
+          loginActionResult.result.accessToken
+        );
         router.push("/home");
         toast("Logged in", {
           description: "Redirecting to home...",
@@ -283,21 +288,7 @@ function CreateAccountForm({
           ),
           duration: 3000,
         });
-      } else {
-        const data = await res2.json();
-        toast("Failed to log in", {
-          description: data.error || "Unknown error.",
-          icon: <AlertCircleIcon className="text-error-foreground w-5 h-5" />,
-          duration: 3000,
-        });
       }
-    } else {
-      const data = await res.json();
-      toast("Failed to create account", {
-        description: data.error || "Unknown error.",
-        icon: <AlertCircleIcon className="text-error-foreground w-5 h-5" />,
-        duration: 3000,
-      });
     }
   }
   return (

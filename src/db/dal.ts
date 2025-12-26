@@ -24,6 +24,23 @@ export type DatabaseQueryResult<T> =
   | { success: true; result: T }
   | { success: false; errorString: string };
 
+export function databaseQueryError(
+  errorString: string
+): DatabaseQueryResult<any> {
+  return { success: false, errorString: errorString };
+}
+
+export function databaseQuerySuccess(): DatabaseQueryResult<void>;
+export function databaseQuerySuccess<T>(result: T): DatabaseQueryResult<T>;
+export function databaseQuerySuccess<T>(
+  result?: T
+): DatabaseQueryResult<T | void> {
+  return {
+    success: true,
+    result: result as T,
+  };
+}
+
 /**
  * Executes a database query and returns error/success as well as the result if succeeded.
  * WILL check validity of the token provided (will check whether it exists in the database and not expired/revoked, nothing further.)

@@ -19,3 +19,8 @@ server action order:
 - call query/ies (make sure the query checks for authenticity between user and matched data)
 - if returns non-void type, convert to minimized-data type
 
+
+
+In internal queries, don't pass servertypes as parameters. Pass parameters individually. ServerTypes are only to be used when returned from queries, aka, only when we know the object 100% exists. This is to prevent human mistakes, so we always know a ServerType is valid and was returned by server.
+
+rename securedbscope to securedalscope // add comment this ensures only called in internal or dal
