@@ -1,45 +1,36 @@
-import "server-only";
-
 import { QueryResult } from "pg";
-import { ServerAccessToken } from "./server_types";
-import db from "../db";
-import { SecureDBScope } from "../dal";
+import { DALScope } from "@/src/db/dal";
+import db from "@/src/db/db";
 
-export async function getAccessToken(
-  _scope: SecureDBScope,
-  token: string
-): Promise<ServerAccessToken> {
-  try {
-    const result: QueryResult<ServerAccessToken> =
-      await db.query<ServerAccessToken>(
-        "SELECT * FROM ACCESS_TOKENS WHERE token = $1",
-        [token]
-      );
-    if (result.rows.length == 0) {
-      throw Error("No token exist.");
-    }
-    return result.rows[0];
-  } catch (error) {
-    throw error;
-  }
+export interface ServerAccessToken {
+  token: string;
+  user_id: string;
+  creation_timestamp: Date;
+  expiration_timestamp: Date;
+  last_use_timestamp: Date | null;
+  manually_revoked_timestamp: Date | null;
+  automatically_revoked_timestamp: Date | null;
 }
 
 /**
- * Returns all access tokens for user, regardless of whether the token is revoked or expired
- * Throws error if no tokens exist for this user.
+ * Returns all access tokens associated with a user.
+ * This includes tokens that are expired or revoked.
  *
- * Besides permissions, no further authentication checks are required.
- * No further arguments, so no need to check validity of arguments.
+ * The query is performed with the provided `userId`, or with the requester user ID if `userId` is not specified.
+ * @param userId Optional target user ID whose tokens should be returned.
+ * @throws Error If no access tokens exist for the target user.
+ * @throws Error If the database query fails.
  */
 export async function getUserAccessTokens(
-  _scope: SecureDBScope,
-  requesterUserId: string
+  _scope: DALScope,
+  requesterUserId: string,
+  userId?: string
 ): Promise<ServerAccessToken[]> {
   try {
     const result: QueryResult<ServerAccessToken> =
       await db.query<ServerAccessToken>(
         "SELECT * FROM ACCESS_TOKENS WHERE user_id = $1",
-        [requesterUserId]
+        [userId ?? requesterUserId]
       );
     if (result.rows.length == 0) {
       throw Error("No tokens exist for this user.");
@@ -57,7 +48,7 @@ export async function getUserAccessTokens(
  * Besides permissions, no further checks are required.
  */
 export async function updateAccessTokenManuallyRevokedTimestamp(
-  _scope: SecureDBScope,
+  _scope: DALScope,
   requesterUserId: string,
   token: string
 ) {
@@ -81,7 +72,7 @@ export async function updateAccessTokenManuallyRevokedTimestamp(
  * Besides permissions, no further checks are required.
  */
 export async function updateAccessTokenAutomaticallyRevokedTimestamp(
-  _scope: SecureDBScope,
+  _scope: DALScope,
   requesterUserId: string,
   token: string
 ) {
@@ -106,7 +97,7 @@ export async function updateAccessTokenAutomaticallyRevokedTimestamp(
  * Last use and creation timestamps will be set to now.
  */
 export async function addAccessToken(
-  _scope: SecureDBScope,
+  _scope: DALScope,
   token: string,
   userId: string,
   expirationTimestamp: Date

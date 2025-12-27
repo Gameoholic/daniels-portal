@@ -1,29 +1,27 @@
 "use server";
 
 import {
-  isAccessTokenValid,
-  ServerAccessToken,
-  ServerUser,
-} from "../db/_internal/server_types";
-import { updateUserLastLoginTimestamp } from "../db/_internal/users";
-import {
   DatabaseQueryResult,
   executeDatabaseQuery,
-  executeDatabaseQueryWithoutToken,
+  tokenless_executeDatabaseQuery,
 } from "../db/dal";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { invalidateTokensIfOverMaxAmountAction } from "./per-page/user-settings";
-import {
-  addAccessToken,
-  getUserAccessTokens,
-  updateAccessTokenAutomaticallyRevokedTimestamp,
-} from "../db/_internal/access-tokens";
+
 import {
   tokenless_getUserAccessTokens,
   tokenless_getUserByUsername,
   tokenless_updateAccessTokenAutomaticallyRevokedTimestamp,
 } from "../db/_internal/tokenless-queries";
+import {
+  ServerUser,
+  updateUserLastLoginTimestamp,
+} from "@/src/db/_internal/per-table/users";
+import {
+  addAccessToken,
+  isAccessTokenValid,
+} from "@/src/db/_internal/per-table/access-tokens";
 
 export interface LoginActions_LoginAction_Result {
   accessToken: string;
@@ -35,7 +33,7 @@ export async function loginAction(
   plaintextPassword: string
 ): Promise<DatabaseQueryResult<LoginActions_LoginAction_Result>> {
   // Get user, check if it exists
-  const getUserRequest = await executeDatabaseQueryWithoutToken(
+  const getUserRequest = await tokenless_executeDatabaseQuery(
     tokenless_getUserByUsername,
     [username]
   );
@@ -78,7 +76,7 @@ export async function loginAction(
   const expirationTimestamp = new Date(
     Date.now() + 1000 * user.default_token_expiry_seconds
   );
-  const createAccessTokenRequest = await executeDatabaseQueryWithoutToken(
+  const createAccessTokenRequest = await tokenless_executeDatabaseQuery(
     addAccessToken,
     [token, user.id, expirationTimestamp]
   );
@@ -115,7 +113,7 @@ async function invalidateTokensIfOverMaxAmount(
   maxTokensAllowed: number
 ): Promise<DatabaseQueryResult<void>> {
   // Get all user's access tokens
-  const getUserAccessTokensQuery = await executeDatabaseQueryWithoutToken(
+  const getUserAccessTokensQuery = await tokenless_executeDatabaseQuery(
     tokenless_getUserAccessTokens,
     [userId]
   );
@@ -135,7 +133,7 @@ async function invalidateTokensIfOverMaxAmount(
     for (let i = 0; i < amountOfTokensToRemove; i++) {
       // Revoke each token that goes over the allowed amount
       const updateAccessTokenAutomaticallyRevokedTimestampQuery =
-        await executeDatabaseQueryWithoutToken(
+        await tokenless_executeDatabaseQuery(
           tokenless_updateAccessTokenAutomaticallyRevokedTimestamp,
           [userId, sortedTokens[i].token]
         );

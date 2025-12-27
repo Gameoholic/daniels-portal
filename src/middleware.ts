@@ -5,12 +5,12 @@ export const runtime = "nodejs"; // https://nextjs.org/docs/app/api-reference/ed
 import { NextRequest, NextResponse } from "next/server";
 import {
   DatabaseQueryResult,
-  executeDatabaseQueryWithoutToken,
+  tokenless_executeDatabaseQuery,
   verifyAccessToken,
   verifyAccessTokenFromBrowser,
 } from "./db/dal";
-import { ServerPermission } from "./db/_internal/server_types";
 import { tokenless_getUserPermissions } from "./db/_internal/tokenless-queries";
+import { ServerPermission } from "@/src/db/_internal/per-table/permissions";
 
 // todo: clean up this entire logic
 export async function middleware(req: NextRequest) {
@@ -73,7 +73,7 @@ export async function middleware(req: NextRequest) {
   // Verify permissions:
   const userId = verifyAccessTokenResult.result.user_id;
   // We do this via the without-token method and not an action because the executeDatabaseQuery method takes the token from the cookie directly.
-  const getUserPermissionsRequest = await executeDatabaseQueryWithoutToken(
+  const getUserPermissionsRequest = await tokenless_executeDatabaseQuery(
     tokenless_getUserPermissions,
     [userId]
   );

@@ -1,12 +1,16 @@
 import "server-only";
 
-import { ServerPermission } from "./server_types";
 import { QueryResult } from "pg";
-import db from "../db";
-import { SecureDBScope } from "../dal";
+import { DALScope } from "@/src/db/dal";
+import db from "@/src/db/db";
+
+export interface ServerPermission {
+  user_id: string;
+  permission_name: string;
+}
 
 export async function getUserPermissions(
-  _scope: SecureDBScope,
+  _scope: DALScope,
   requesterUserId: string
 ): Promise<ServerPermission[]> {
   try {

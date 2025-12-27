@@ -1,19 +1,17 @@
 import { QueryResult } from "pg";
-import { SecureDBScope } from "../dal";
-import {
-  ServerAccessToken,
-  ServerAccountCreationCode,
-  ServerPermission,
-  ServerUser,
-} from "./server_types";
+import { DALScope, DALTokenlessQueryScope } from "../dal";
 import db from "../db";
+import { ServerAccessToken } from "@/src/db/_internal/per-table/access-tokens";
+import { ServerUser } from "@/src/db/_internal/per-table/users";
+import { ServerPermission } from "@/src/db/_internal/per-table/permissions";
+import { ServerAccountCreationCode } from "@/src/db/_internal/per-table/account-creation-codes";
 
 /**
  * Returns all access tokens for user, regardless of whether the token is revoked or expired
  * Throws error if no tokens exist for this user.
  */
 export async function tokenless_getUserAccessTokens(
-  _scope: SecureDBScope,
+  _scope: DALTokenlessQueryScope,
   userId: string
 ): Promise<ServerAccessToken[]> {
   try {
@@ -35,7 +33,7 @@ export async function tokenless_getUserAccessTokens(
  * Updates the automatically_revoked_timestamp field of an access token.
  */
 export async function tokenless_updateAccessTokenAutomaticallyRevokedTimestamp(
-  _scope: SecureDBScope,
+  _scope: DALTokenlessQueryScope,
   userId: string,
   token: string
 ) {
@@ -58,7 +56,7 @@ export async function tokenless_updateAccessTokenAutomaticallyRevokedTimestamp(
  * @param username The username of the user.
  */
 export async function tokenless_getUserByUsername(
-  _scope: SecureDBScope,
+  _scope: DALTokenlessQueryScope,
   username: string
 ): Promise<ServerUser> {
   try {
@@ -77,7 +75,7 @@ export async function tokenless_getUserByUsername(
 
 // UserID-less function. CAN BE USED WITHOUT ACCESS TOKEN.
 export async function tokenless_getUserPermissions(
-  _scope: SecureDBScope,
+  _scope: DALTokenlessQueryScope,
   userId: string
 ): Promise<ServerPermission[]> {
   try {
@@ -95,7 +93,7 @@ export async function tokenless_getUserPermissions(
 }
 
 export async function tokenless_getAccountCreationCode(
-  _scope: SecureDBScope,
+  _scope: DALTokenlessQueryScope,
   code: string
 ): Promise<ServerAccountCreationCode> {
   try {
@@ -115,7 +113,7 @@ export async function tokenless_getAccountCreationCode(
 }
 
 export async function tokenless_setAccountCreationCodeUsed(
-  _scope: SecureDBScope,
+  _scope: DALTokenlessQueryScope,
   code: string
 ): Promise<void> {
   try {
@@ -135,7 +133,7 @@ export async function tokenless_setAccountCreationCodeUsed(
  * Will automatically set creation timestamp to now. Will set last login timestamp to null.
  */
 export async function addUser(
-  _scope: SecureDBScope,
+  _scope: DALTokenlessQueryScope,
   userId: string,
   username: string,
   email: string,
@@ -175,4 +173,60 @@ export async function addUser(
   } catch (error) {
     throw error;
   }
+}
+
+export async function getAccessToken(
+  _scope: DALTokenlessQueryScope,
+  token: string
+): Promise<ServerAccessToken> {
+  try {
+    const result: QueryResult<ServerAccessToken> =
+      await db.query<ServerAccessToken>(
+        "SELECT * FROM ACCESS_TOKENS WHERE token = $1",
+        [token]
+      );
+    if (result.rows.length == 0) {
+      throw Error("No token exist.");
+    }
+    return result.rows[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+export type AccessTokenValidationResult =
+  | { valid: true }
+  | { valid: false; reason: AccessTokenInvalidReason };
+
+export enum AccessTokenInvalidReason {
+  EXPIRED,
+  MANUALLY_REVOKED,
+  AUTOMATICALLY_REVOKED,
+}
+
+export function isAccessTokenValid(
+  token: ServerAccessToken
+): AccessTokenValidationResult {
+  if (token.manually_revoked_timestamp) {
+    return {
+      valid: false,
+      reason: AccessTokenInvalidReason.MANUALLY_REVOKED,
+    };
+  }
+
+  if (token.automatically_revoked_timestamp) {
+    return {
+      valid: false,
+      reason: AccessTokenInvalidReason.AUTOMATICALLY_REVOKED,
+    };
+  }
+
+  if (token.expiration_timestamp <= new Date()) {
+    return {
+      valid: false,
+      reason: AccessTokenInvalidReason.EXPIRED,
+    };
+  }
+
+  return { valid: true };
 }

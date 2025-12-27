@@ -1,13 +1,18 @@
 import { QueryResult } from "pg";
-import { SecureDBScope } from "../dal";
-import { ServerGymWeight } from "./server_types";
-import db from "../db";
+import { DALScope } from "@/src/db/dal";
+import db from "@/src/db/db";
+
+export interface ServerGymWeight {
+  user_id: string;
+  amount: number;
+  timestamp: Date;
+}
 
 /**
  * @returns The gym weights ordered by timestamp.
  */
 export async function getGymWeights(
-  _scope: SecureDBScope,
+  _scope: DALScope,
   requesterUserId: string
 ): Promise<ServerGymWeight[]> {
   try {
@@ -27,7 +32,7 @@ export async function getGymWeights(
  * Does NOT check whether the requester user id is the owner of the weight - CHECK BEFORE RUNNING.
  */
 export async function addGymWeight(
-  _scope: SecureDBScope,
+  _scope: DALScope,
   _requesterUserId: string,
   weight: ServerGymWeight
 ) {
@@ -53,7 +58,7 @@ export async function addGymWeight(
  * Does NOT check whether the requester user id is the owner of the weight - CHECK BEFORE RUNNING.
  */
 export async function deleteGymWeight(
-  _scope: SecureDBScope,
+  _scope: DALScope,
   _requesterUserId: string,
   weight: ServerGymWeight
 ) {

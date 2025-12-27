@@ -12,7 +12,7 @@ import {
   databaseQueryError,
   databaseQuerySuccess,
   DatabaseQueryResult,
-  executeDatabaseQueryWithoutToken,
+  tokenless_executeDatabaseQuery,
 } from "../db/dal";
 
 export async function createAccountAction(
@@ -22,7 +22,7 @@ export async function createAccountAction(
   accountCreationCodePlain: string
 ): Promise<DatabaseQueryResult<void>> {
   // Check if account creation code is valid
-  const getAccountCreationCodeRequest = await executeDatabaseQueryWithoutToken(
+  const getAccountCreationCodeRequest = await tokenless_executeDatabaseQuery(
     tokenless_getAccountCreationCode,
     [accountCreationCodePlain]
   );
@@ -61,7 +61,7 @@ export async function createAccountAction(
   // - To not let users select their own usernames (username would be created along with account creation code) <- Most secure but less convenient
   if (
     (
-      await executeDatabaseQueryWithoutToken(tokenless_getUserByUsername, [
+      await tokenless_executeDatabaseQuery(tokenless_getUserByUsername, [
         username,
       ])
     ).success
@@ -74,10 +74,9 @@ export async function createAccountAction(
 
   // Invalidate account creation code
   const setAccountCreationCodeUsedRequest =
-    await executeDatabaseQueryWithoutToken(
-      tokenless_setAccountCreationCodeUsed,
-      [accountCreationCode.code]
-    );
+    await tokenless_executeDatabaseQuery(tokenless_setAccountCreationCodeUsed, [
+      accountCreationCode.code,
+    ]);
   if (!setAccountCreationCodeUsedRequest.success) {
     return databaseQueryError(
       "Could not create account due to an internal error."
@@ -91,7 +90,7 @@ export async function createAccountAction(
   const hashedPassword = await bcrypt.hash(plaintextPassword, salt);
 
   // Create account
-  const createUserRequest = await executeDatabaseQueryWithoutToken(addUser, [
+  const createUserRequest = await tokenless_executeDatabaseQuery(addUser, [
     userId,
     username,
     email,

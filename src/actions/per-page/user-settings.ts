@@ -1,24 +1,21 @@
 "use server"; // All server actions must have this, turns this into callable from client. Otherwise, it turns into import("server-only") and then it's inaccessible to client
 import {
+  getUserAccessTokens,
+  isAccessTokenValid,
+  updateAccessTokenAutomaticallyRevokedTimestamp,
+} from "@/src/db/_internal/per-table/access-tokens";
+import {
+  getUser,
+  ServerUser,
+  updateDefaultTokenExpiry,
+  updateMaxTokensAtATime,
+} from "@/src/db/_internal/per-table/users";
+import {
   executeDatabaseQuery,
   getAccessTokenFromBrowser,
   DatabaseQueryResult,
 } from "@/src/db/dal";
-import {
-  getUserAccessTokens,
-  updateAccessTokenAutomaticallyRevokedTimestamp,
-  updateAccessTokenManuallyRevokedTimestamp,
-} from "@/src/db/_internal/access-tokens";
-import {
-  isAccessTokenValid,
-  ServerUser,
-} from "@/src/db/_internal/server_types";
 import { cookies } from "next/headers";
-import {
-  getUser,
-  updateDefaultTokenExpiry,
-  updateMaxTokensAtATime,
-} from "@/src/db/_internal/users";
 
 //todo: check permissions
 
@@ -192,7 +189,7 @@ export async function revokeTokenAction(
   const updateAccessTokenManuallyRevokedTimestampQuery =
     await executeDatabaseQuery(
       await getAccessTokenFromBrowser(),
-      updateAccessTokenManuallyRevokedTimestamp,
+      updateAccessTokenAutomaticallyRevokedTimestamp,
       [token]
     );
 

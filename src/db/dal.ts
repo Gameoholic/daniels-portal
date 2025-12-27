@@ -6,18 +6,31 @@ import { cookies } from "next/headers";
 import db from "./db";
 import {
   AccessTokenInvalidReason,
+  getAccessToken,
   isAccessTokenValid,
-  ServerAccessToken,
-} from "./_internal/server_types";
-import { getAccessToken } from "./_internal/access-tokens";
-import { tokenless_getUserPermissions } from "./_internal/tokenless-queries";
+  tokenless_getUserPermissions,
+} from "./_internal/tokenless-queries";
+import { ServerAccessToken } from "@/src/db/_internal/per-table/access-tokens";
+import { getUserPermissions } from "@/src/db/_internal/per-table/permissions";
 
 declare const AuthorizedDALScope: unique symbol;
+declare const AuthorizedDALTokenlessScope: unique symbol;
 /**
- * Prevents use of internal DB functions outside of the dal.ts executeDatabaseQuery function
+ * Prevents use of internal DB functions outside of the dal.ts file. They are designed to be invoked via the executeDatabaseQuery function.
+ * All internal functions (that use access tokens) are required to have this scope as a parameter.
+ * Only internal files can import this type, thus guaranteeing the scope.
  */
-export type SecureDBScope = {
+export type DALScope = {
   readonly [AuthorizedDALScope]: true;
+};
+
+/**
+ * Prevents use of internal DB functions outside of the dal.ts file. They are designed to be invoked via the tokenless_executeDatabaseQuery function.
+ * All TOKENLESS internal functions are required to have this scope as a parameter.
+ * Only internal files can import this type, thus guaranteeing the scope.
+ */
+export type DALTokenlessQueryScope = {
+  readonly [AuthorizedDALTokenlessScope]: true;
 };
 
 export type DatabaseQueryResult<T> =
@@ -53,7 +66,7 @@ export function databaseQuerySuccess<T>(
 export async function executeDatabaseQuery<T, Args extends any[]>(
   requesterAccessToken: string | null,
   queryMethod: (
-    scope: SecureDBScope,
+    scope: DALScope,
     requesterUserId: string,
     ...args: Args
   ) => Promise<T>,
@@ -86,7 +99,7 @@ export async function executeDatabaseQuery<T, Args extends any[]>(
 
     // Finally, execute the query
     let result: T = await queryMethod(
-      {} as SecureDBScope, // Creates the scope
+      {} as DALScope, // Creates the scope
       accessTokenVerificationResult.result.user_id,
       ...args
     );
@@ -126,8 +139,8 @@ export async function executeDatabaseQuery<T, Args extends any[]>(
  * Do not use this function if we have a user token.
  *
  */
-export async function executeDatabaseQueryWithoutToken<T, Args extends any[]>(
-  queryMethod: (scope: SecureDBScope, ...args: Args) => Promise<T>,
+export async function tokenless_executeDatabaseQuery<T, Args extends any[]>(
+  queryMethod: (scope: DALTokenlessQueryScope, ...args: Args) => Promise<T>,
   args: Args,
   mappedErrorCodeMessages: Record<string, string> = {},
   unmappedErrorCodeMessage: string = "An unknown error has occurred.",
@@ -141,7 +154,7 @@ export async function executeDatabaseQueryWithoutToken<T, Args extends any[]>(
   try {
     // Finally, execute the query
     let result: T = await queryMethod(
-      {} as SecureDBScope, // Creates the scope
+      {} as DALTokenlessQueryScope, // Creates the scope
       ...args
     );
 
@@ -194,17 +207,19 @@ export async function verifyAccessToken(
     };
   }
 
-  let accessToken;
   // THIS WILL VERIFY THE TOKEN IS ACTUALLY VALID and not expired/revoked
   // We use the function directly and not through executeDatabaseQuery because this function is called there!
-  try {
-    accessToken = await getAccessToken({} as SecureDBScope, token);
-  } catch (error: any) {
+  const getAccessTokenRequest = await tokenless_executeDatabaseQuery(
+    getAccessToken,
+    [token]
+  );
+  if (!getAccessTokenRequest.success) {
     return {
       success: false,
       errorString: "Invalid access token.",
     };
   }
+  const accessToken = getAccessTokenRequest.result;
 
   const accessTokenValidationResult = isAccessTokenValid(accessToken);
   if (!accessTokenValidationResult.valid) {
@@ -273,7 +288,7 @@ export async function checkForPermission(
 ): Promise<DatabaseQueryResult<void>> {
   const getUserPermissionsQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
-    tokenless_getUserPermissions,
+    getUserPermissions,
     []
   );
   if (!getUserPermissionsQuery.success) {

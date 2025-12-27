@@ -1,24 +1,12 @@
 "use server"; // All server actions must have this, turns this into callable from client. Otherwise, it turns into import("server-only") and then it's inaccessible to client
+import { getUser, ServerUser } from "@/src/db/_internal/per-table/users";
 import {
   DatabaseQueryResult,
   executeDatabaseQuery,
   getAccessTokenFromBrowser,
 } from "../../db/dal";
-import {
-  getUserAccessTokens,
-  updateAccessTokenAutomaticallyRevokedTimestamp,
-  updateAccessTokenManuallyRevokedTimestamp,
-} from "../../db/_internal/access-tokens";
-import {
-  isAccessTokenValid,
-  ServerUser,
-} from "../../db/_internal/server_types";
+
 import { cookies } from "next/headers";
-import {
-  getUser,
-  updateDefaultTokenExpiry,
-  updateMaxTokensAtATime,
-} from "../../db/_internal/users";
 
 export interface HomeActions_GetUserAction_Result {
   id: string;

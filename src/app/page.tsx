@@ -28,9 +28,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { ThemeSwitcher } from "@/src/components/global/ThemeSwitcher";
-import { loginAction } from "../actions/login";
 import { verifyAccountCreationCodeAction } from "../actions/verify-account-creation-code";
 import { createAccountAction } from "../actions/create-account";
+import { loginAction } from "@/src/actions/login";
 
 export default function Home() {
   return (

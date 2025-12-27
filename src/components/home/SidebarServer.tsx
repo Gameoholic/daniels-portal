@@ -1,6 +1,5 @@
 import { getUserPermissionsAction } from "@/src/actions/permissions";
 import { SidebarClient, SidebarItem } from "./SidebarClient";
-import { getUserPermissions } from "@/src/db/_internal/permissions";
 
 export async function SidebarServer() {
   const getUserPermissionsActionResult = await getUserPermissionsAction();

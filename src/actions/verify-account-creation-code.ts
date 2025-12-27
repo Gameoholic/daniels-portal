@@ -12,14 +12,14 @@ import {
   databaseQueryError,
   databaseQuerySuccess,
   DatabaseQueryResult,
-  executeDatabaseQueryWithoutToken,
+  tokenless_executeDatabaseQuery,
 } from "../db/dal";
 
 export async function verifyAccountCreationCodeAction(
   code: string
 ): Promise<DatabaseQueryResult<void>> {
   // Check if account creation code is valid
-  const getAccountCreationCodeRequest = await executeDatabaseQueryWithoutToken(
+  const getAccountCreationCodeRequest = await tokenless_executeDatabaseQuery(
     tokenless_getAccountCreationCode,
     [code]
   );

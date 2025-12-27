@@ -1,32 +1,18 @@
 "use server"; // All server actions must have this, turns this into callable from client. Otherwise, it turns into import("server-only") and then it's inaccessible to client
 import {
+  addGymWeight,
+  getGymWeights,
+  ServerGymWeight,
+} from "@/src/db/_internal/per-table/gym-weights";
+import {
   checkForPermission,
   DatabaseQueryResult,
   executeDatabaseQuery,
   getAccessTokenFromBrowser,
   verifyAccessTokenFromBrowser,
 } from "../../db/dal";
-import {
-  getUserAccessTokens,
-  updateAccessTokenAutomaticallyRevokedTimestamp,
-  updateAccessTokenManuallyRevokedTimestamp,
-} from "../../db/_internal/access-tokens";
-import {
-  isAccessTokenValid,
-  ServerAccessToken,
-  ServerExpense,
-  ServerGymWeight,
-  ServerUser,
-} from "../../db/_internal/server_types";
+
 import { cookies } from "next/headers";
-import {
-  getUser,
-  updateDefaultTokenExpiry,
-  updateMaxTokensAtATime,
-} from "../../db/_internal/users";
-import { getUserPermissions } from "@/src/db/_internal/permissions";
-import { getExpenses } from "@/src/db/_internal/expenses";
-import { addGymWeight, getGymWeights } from "@/src/db/_internal/gym-weights";
 
 export interface GymActions_GetUserGymWeights_Result {
   amount: number;

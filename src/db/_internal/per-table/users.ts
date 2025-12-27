@@ -1,9 +1,20 @@
 import "server-only";
 
-import db from "../db";
-import { SecureDBScope } from "../dal";
-import { ServerUser } from "@/src/db/_internal/server_types";
 import { QueryResult } from "pg";
+import { DALScope } from "@/src/db/dal";
+import db from "@/src/db/db";
+
+export interface ServerUser {
+  id: string;
+  username: string;
+  hashed_password: string;
+  email: string;
+  creation_timestamp: Date;
+  last_login_timestamp: Date | null;
+  default_token_expiry_seconds: number;
+  max_tokens_at_a_time: number | null;
+  deletion_timestamp: Date | null;
+}
 
 /**
  * Updates the default_token_expiry_seconds field of a user.
@@ -11,7 +22,7 @@ import { QueryResult } from "pg";
  * Besides permissions, no further checks are required.
  */
 export async function updateDefaultTokenExpiry(
-  _scope: SecureDBScope,
+  _scope: DALScope,
   requesterUserId: string,
   expirySeconds: number
 ): Promise<void> {
@@ -34,7 +45,7 @@ export async function updateDefaultTokenExpiry(
  * Besides permissions, no further checks are required.
  */
 export async function updateMaxTokensAtATime(
-  _scope: SecureDBScope,
+  _scope: DALScope,
   requesterUserId: string,
   max: number | null
 ): Promise<void> {
@@ -56,7 +67,7 @@ export async function updateMaxTokensAtATime(
  * @param userId Optional: If null, will use the requester user ID.
  */
 export async function getUser(
-  _scope: SecureDBScope,
+  _scope: DALScope,
   requesterUserId: string,
   userId?: string
 ): Promise<ServerUser> {
@@ -75,7 +86,7 @@ export async function getUser(
 }
 
 export async function updateUserLastLoginTimestamp(
-  _scope: SecureDBScope,
+  _scope: DALScope,
   requesterUserId: string
 ): Promise<void> {
   try {

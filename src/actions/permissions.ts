@@ -1,7 +1,9 @@
 "use server";
 
-import { getUserPermissions } from "../db/_internal/permissions";
-import { ServerPermission } from "../db/_internal/server_types";
+import {
+  getUserPermissions,
+  ServerPermission,
+} from "@/src/db/_internal/per-table/permissions";
 import {
   DatabaseQueryResult,
   executeDatabaseQuery,
