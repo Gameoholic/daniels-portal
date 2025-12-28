@@ -6,6 +6,7 @@ import {
 } from "@/src/db/_internal/per-table/gym-weights";
 import {
   checkForPermission,
+  databaseQueryError,
   DatabaseQueryResult,
   executeDatabaseQuery,
   getAccessTokenFromBrowser,
@@ -15,14 +16,17 @@ import {
 import { cookies } from "next/headers";
 
 export interface GymActions_GetUserGymWeights_Result {
-  amount: number;
+  id: string;
+  weight: number;
   timestamp: Date;
 }
 
 export async function getUserGymWeightsAction(): Promise<
   DatabaseQueryResult<GymActions_GetUserGymWeights_Result[]>
 > {
-  checkForPermission("use_app_gym");
+  if (!(await checkForPermission("use_app_gym")).success) {
+    return databaseQueryError("No permission.");
+  }
 
   const getGymWeightsQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
@@ -38,7 +42,8 @@ export async function getUserGymWeightsAction(): Promise<
   // Minimize data passed to client to only necessary data
   const minimizedGymWeights: GymActions_GetUserGymWeights_Result[] =
     gymWeights.map((x) => ({
-      amount: x.amount,
+      id: x.id,
+      weight: x.weight,
       timestamp: x.timestamp,
     }));
 
@@ -56,8 +61,11 @@ export interface GymActions_AddGymWeight_GymWeightParameter {
 export async function addGymWeightAction(
   gymWeight: GymActions_AddGymWeight_GymWeightParameter
 ): Promise<DatabaseQueryResult<void>> {
-  checkForPermission("use_app_gym");
+  if (!(await checkForPermission("use_app_gym")).success) {
+    return databaseQueryError("No permission.");
+  }
 
+  return { success: false, errorString: "todo implement this action." };
   // Verify passed data
   if (gymWeight.amount <= 0) {
     return {
@@ -77,7 +85,7 @@ export async function addGymWeightAction(
   const userId = accessTokenQuery.result.user_id;
   const serverGymWeight: ServerGymWeight = {
     user_id: userId,
-    amount: gymWeight.amount,
+    weight: gymWeight.amount,
     timestamp: gymWeight.timestamp,
   };
 

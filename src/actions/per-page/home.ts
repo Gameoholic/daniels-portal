@@ -4,6 +4,8 @@ import {
   DatabaseQueryResult,
   executeDatabaseQuery,
   getAccessTokenFromBrowser,
+  GET_USER_ID_FROM_ACCESS_TOKEN,
+  databaseQueryError,
 } from "../../db/dal";
 
 import { cookies } from "next/headers";
@@ -22,10 +24,13 @@ export async function getUserAction(): Promise<
   const getUserQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUser,
-    []
+    [GET_USER_ID_FROM_ACCESS_TOKEN]
   );
   if (!getUserQuery.success) {
     return getUserQuery;
+  }
+  if (getUserQuery.result == null) {
+    return databaseQueryError("User doesn't exist.");
   }
 
   const user: ServerUser = getUserQuery.result;

@@ -55,22 +55,47 @@ export function databaseQuerySuccess<T>(
 }
 
 /**
+ * Can pass this as a parameter to get the user ID from the passed access token.
+ */
+export const GET_USER_ID_FROM_ACCESS_TOKEN: unique symbol = Symbol(
+  "USE_USER_ID_FROM_ACCESS_TOKEN"
+);
+
+function resolveArgs<Args extends readonly unknown[]>(
+  args: Args,
+  userIdFromToken: string
+): Args {
+  return args.map((arg) =>
+    arg === GET_USER_ID_FROM_ACCESS_TOKEN ? userIdFromToken : arg
+  ) as unknown as Args;
+}
+
+/**
  * Executes a database query and returns error/success as well as the result if succeeded.
- * WILL check validity of the token provided (will check whether it exists in the database and not expired/revoked, nothing further.)
+ *
+ * Will check validity of the token provided (will check whether it exists in the database and not expired/revoked, nothing further.)
+ *
  * Will also update the last used timestamp of the token.
  *
- * IMPORTANT!!! This method DOES NOT:
+ * ⚠️ IMPORTANT!!! This method DOES NOT:
  * - Check for permissions
- * - Check whether the provided token matches the request parameters (eg. a user could use their own token to request to update another user's expense, as long as they know the expense ID. The user's own token is valid, therefore we don't return an error.).
+ * - Check whether the provided arguments are associated with the provided access token
+ * (eg. a user could use their own token to request to update another user's expense, as long as they know the expense ID.
+ * The user's own token is valid, therefore we don't return an error.).
+ *
+ * @param requesterAccessToken The access token of the requester user. If null, will return an invalid token error immediately.
+ * @param queryMethod The internal query to call. (any authenticated query function inside db/_internal)
+ * @param args The argument to pass to the internal query. Must match the function signature of queryMethod (except for the scope variable, ignore it). Can use the USE_USER_ID_FROM_ACCESS_TOKEN symbol instead of an argument for the user ID of the requester.
+ * @returns Failure with error message, or success with the query's result (undefined in case of query return type void).
  */
-export async function executeDatabaseQuery<T, Args extends any[]>(
+export async function executeDatabaseQuery<T, Args extends readonly unknown[]>(
   requesterAccessToken: string | null,
-  queryMethod: (
-    scope: DALScope,
-    requesterUserId: string,
-    ...args: Args
-  ) => Promise<T>,
-  args: Args,
+  queryMethod: (scope: DALScope, ...args: Args) => Promise<T>,
+  args: {
+    readonly [K in keyof Args]: Args[K] extends string
+      ? string | typeof GET_USER_ID_FROM_ACCESS_TOKEN
+      : Args[K];
+  },
   mappedErrorCodeMessages: Record<string, string> = {},
   unmappedErrorCodeMessage: string = "An unknown error has occurred.",
   unknownErrorMessage1: string = "An unknown error has occurred.",
@@ -97,11 +122,15 @@ export async function executeDatabaseQuery<T, Args extends any[]>(
       requesterAccessToken
     );
 
+    const resolvedArgs = resolveArgs(
+      args,
+      accessTokenVerificationResult.result.user_id
+    ) as Args;
+
     // Finally, execute the query
     let result: T = await queryMethod(
       {} as DALScope, // Creates the scope
-      accessTokenVerificationResult.result.user_id,
-      ...args
+      ...resolvedArgs
     );
 
     return { success: true, result: result };
@@ -134,10 +163,13 @@ export async function executeDatabaseQuery<T, Args extends any[]>(
 
 /**
  * Executes a database query and returns error/success as well as the result if succeeded.
+ *
+ * ⚠️ Does not verify an access token before executing.
+ *
+ * Only designated tokenless queries can be used via this method.
+ * Still, do not use this function if we have a user token. Should be limited to the website non-user homepage and middleware.
+ *
  * This is designed to be used by server for actions that do not have a user token yet (for example, login or register requests..)
- *
- * Do not use this function if we have a user token.
- *
  */
 export async function tokenless_executeDatabaseQuery<T, Args extends any[]>(
   queryMethod: (scope: DALTokenlessQueryScope, ...args: Args) => Promise<T>,
@@ -289,27 +321,35 @@ export async function checkForPermission(
   const getUserPermissionsQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUserPermissions,
-    []
+    [GET_USER_ID_FROM_ACCESS_TOKEN]
   );
   if (!getUserPermissionsQuery.success) {
-    return {
-      success: false,
-      errorString: "An error has occurred.",
-    };
+    return databaseQueryError("An error has occurred.");
   }
   if (
     !getUserPermissionsQuery.result.find(
       (x) => x.permission_name == permissionName
     )
   ) {
-    return {
-      success: false,
-      errorString: "No permission.",
-    };
+    return databaseQueryError("No permission.");
   }
 
-  return {
-    success: true,
-    result: undefined, // void
-  };
+  return databaseQuerySuccess();
+}
+
+// todo: this method can be optimized by calling the getUserPermissions query just once instead of once per permission
+/**
+ *
+ * @returns Whether the user has all the specified permissions
+ */
+export async function checkForPermissions(
+  ...permissionNames: string[]
+): Promise<DatabaseQueryResult<void>> {
+  for (const permission of permissionNames) {
+    if (!(await checkForPermission(permission)).success) {
+      return databaseQueryError("No permission.");
+    }
+  }
+
+  return databaseQuerySuccess();
 }

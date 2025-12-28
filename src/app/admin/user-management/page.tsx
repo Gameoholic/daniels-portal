@@ -1,9 +1,7 @@
 import { Suspense } from "react";
-import { ClientUser } from "@/src/utils/client_types";
 import { v4 as uuidv4 } from "uuid";
 import UserManagement from "@/src/components/admin/UserManagement";
-import { getAllUsersAction } from "@/src/actions/old/admin";
-import { requestGetAllUsers } from "@/src/utils/db/auth/db_actions";
+import { getAllUsersAction } from "@/src/actions/per-page/admin";
 
 export default function UserSettings() {
   return (

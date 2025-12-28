@@ -4,12 +4,15 @@ import {
   DatabaseQueryResult,
   executeDatabaseQuery,
   tokenless_executeDatabaseQuery,
+  GET_USER_ID_FROM_ACCESS_TOKEN,
 } from "../db/dal";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { invalidateTokensIfOverMaxAmountAction } from "./per-page/user-settings";
 
 import {
+  addAccessToken,
+  isAccessTokenValid,
   tokenless_getUserAccessTokens,
   tokenless_getUserByUsername,
   tokenless_updateAccessTokenAutomaticallyRevokedTimestamp,
@@ -18,10 +21,6 @@ import {
   ServerUser,
   updateUserLastLoginTimestamp,
 } from "@/src/db/_internal/per-table/users";
-import {
-  addAccessToken,
-  isAccessTokenValid,
-} from "@/src/db/_internal/per-table/access-tokens";
 
 export interface LoginActions_LoginAction_Result {
   accessToken: string;
@@ -91,7 +90,7 @@ export async function loginAction(
   const updateUserLastLoginTimestampRequest = await executeDatabaseQuery(
     token,
     updateUserLastLoginTimestamp,
-    []
+    [GET_USER_ID_FROM_ACCESS_TOKEN]
   );
   if (!updateUserLastLoginTimestampRequest.success) {
     return {
@@ -135,7 +134,7 @@ async function invalidateTokensIfOverMaxAmount(
       const updateAccessTokenAutomaticallyRevokedTimestampQuery =
         await tokenless_executeDatabaseQuery(
           tokenless_updateAccessTokenAutomaticallyRevokedTimestamp,
-          [userId, sortedTokens[i].token]
+          [sortedTokens[i].token]
         );
       if (!updateAccessTokenAutomaticallyRevokedTimestampQuery.success) {
         return { success: false, errorString: "Couldn't revoke access token" };

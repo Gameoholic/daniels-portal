@@ -22,16 +22,19 @@ export interface ServerExpense {
 }
 
 /**
+ * An authenticated query that gets all user's expenses, EVEN DELETED ONES.
+ *
+ * @throws Error If the database query fails.
  * @returns The user's expenses ordered by timestamp.
  */
-export async function getExpenses(
+export async function getUserExpenses(
   _scope: DALScope,
-  requesterUserId: string
+  userId: string
 ): Promise<ServerExpense[]> {
   try {
     const result: QueryResult<ServerExpense> = await db.query<ServerExpense>(
       "SELECT * FROM expenses WHERE user_id = $1 ORDER BY timestamp ASC",
-      [requesterUserId]
+      [userId]
     );
 
     return result.rows;

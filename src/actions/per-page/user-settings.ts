@@ -1,7 +1,8 @@
 "use server"; // All server actions must have this, turns this into callable from client. Otherwise, it turns into import("server-only") and then it's inaccessible to client
 import {
+  getAccessToken,
+  getAccessTokenBelongingToUser,
   getUserAccessTokens,
-  isAccessTokenValid,
   updateAccessTokenAutomaticallyRevokedTimestamp,
 } from "@/src/db/_internal/per-table/access-tokens";
 import {
@@ -10,14 +11,15 @@ import {
   updateDefaultTokenExpiry,
   updateMaxTokensAtATime,
 } from "@/src/db/_internal/per-table/users";
+import { isAccessTokenValid } from "@/src/db/_internal/tokenless-queries";
 import {
   executeDatabaseQuery,
   getAccessTokenFromBrowser,
   DatabaseQueryResult,
+  GET_USER_ID_FROM_ACCESS_TOKEN,
+  databaseQueryError,
 } from "@/src/db/dal";
 import { cookies } from "next/headers";
-
-//todo: check permissions
 
 export interface UserSettingsActions_GetUserAccessTokensAction_Result {
   token: string;
@@ -35,7 +37,7 @@ export async function getUserAccessTokensAction(): Promise<
   const getUserAccessTokensQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUserAccessTokens,
-    []
+    [GET_USER_ID_FROM_ACCESS_TOKEN]
   );
   if (!getUserAccessTokensQuery.success) {
     return getUserAccessTokensQuery;
@@ -83,7 +85,7 @@ export async function invalidateTokensIfOverMaxAmountAction(
   const getUserAccessTokensQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUserAccessTokens,
-    []
+    [GET_USER_ID_FROM_ACCESS_TOKEN]
   );
   if (!getUserAccessTokensQuery.success) {
     return { success: false, errorString: "Couldn't revoke access token." };
@@ -128,7 +130,8 @@ export async function changeDefaultTokenExpiryAction(
   seconds: number
 ): Promise<DatabaseQueryResult<void>> {
   // Verify arguments are valid
-  if (seconds <= 0) {
+  if (seconds <= 0 || seconds != Math.round(seconds)) {
+    // make sure seconds is an integer number
     return {
       success: false,
       errorString: "Faulty parameters.",
@@ -138,7 +141,7 @@ export async function changeDefaultTokenExpiryAction(
   const updateDefaultTokenExpiryQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     updateDefaultTokenExpiry,
-    [seconds]
+    [GET_USER_ID_FROM_ACCESS_TOKEN, seconds]
   );
   if (!updateDefaultTokenExpiryQuery.success) {
     return { success: false, errorString: "Couldn't update token expiry." };
@@ -168,7 +171,7 @@ export async function changeMaxTokensAtATimeAction(
   const updateMaxTokensAtATimeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     updateMaxTokensAtATime,
-    [max]
+    [GET_USER_ID_FROM_ACCESS_TOKEN, max]
   );
   if (!updateMaxTokensAtATimeQuery.success) {
     return { success: false, errorString: "Couldn't update max tokens." };
@@ -186,6 +189,16 @@ export async function changeMaxTokensAtATimeAction(
 export async function revokeTokenAction(
   token: string
 ): Promise<DatabaseQueryResult<void>> {
+  // Don't trust user-provided ids: Ensure that token belongs to the requester user
+  const getAccessTokenQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    getAccessTokenBelongingToUser,
+    [token, GET_USER_ID_FROM_ACCESS_TOKEN]
+  );
+  if (!getAccessTokenQuery.success || getAccessTokenQuery.result == null) {
+    return databaseQueryError("Couldn't revoke access token.");
+  }
+
   const updateAccessTokenManuallyRevokedTimestampQuery =
     await executeDatabaseQuery(
       await getAccessTokenFromBrowser(),
@@ -216,6 +229,7 @@ export async function revokeSelfTokenAction(): Promise<
       errorString: "Invalid access token.",
     };
   }
+
   const revokeTokenActionResult = revokeTokenAction(token);
   if (!(await revokeTokenActionResult).success) {
     return {
@@ -249,10 +263,13 @@ export async function getUserAction(): Promise<
   const getUserQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUser,
-    []
+    [GET_USER_ID_FROM_ACCESS_TOKEN]
   );
   if (!getUserQuery.success) {
     return getUserQuery;
+  }
+  if (getUserQuery.result == null) {
+    return databaseQueryError("User doesn't exist.");
   }
 
   const user: ServerUser = getUserQuery.result;

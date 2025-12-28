@@ -13,24 +13,21 @@ export interface ServerAccessToken {
 }
 
 /**
- * Returns all access tokens associated with a user.
+ * An authenticated query that returns all access tokens associated with the provided user ID.
  * This includes tokens that are expired or revoked.
  *
- * The query is performed with the provided `userId`, or with the requester user ID if `userId` is not specified.
- * @param userId Optional target user ID whose tokens should be returned.
  * @throws Error If no access tokens exist for the target user.
  * @throws Error If the database query fails.
  */
 export async function getUserAccessTokens(
   _scope: DALScope,
-  requesterUserId: string,
-  userId?: string
+  userId: string
 ): Promise<ServerAccessToken[]> {
   try {
     const result: QueryResult<ServerAccessToken> =
       await db.query<ServerAccessToken>(
         "SELECT * FROM ACCESS_TOKENS WHERE user_id = $1",
-        [userId ?? requesterUserId]
+        [userId]
       );
     if (result.rows.length == 0) {
       throw Error("No tokens exist for this user.");
@@ -42,85 +39,103 @@ export async function getUserAccessTokens(
 }
 
 /**
- * Updates the manually_revoked_timestamp field of an access token.
+ * An authenticated query that updates the manually_revoked_timestamp field of an access token to now.
+ * Only updates it as long as the token is valid and not expired/revoked, otherwise treats it as if token doesn't exist.
  *
- * Will only update the access token if its owner is the requester user ID.
- * Besides permissions, no further checks are required.
+ * @throws Error If the access token doesn't exist.
+ * @throws Error If the database query fails.
  */
 export async function updateAccessTokenManuallyRevokedTimestamp(
   _scope: DALScope,
-  requesterUserId: string,
   token: string
-) {
-  try {
-    const result = await db.query(
-      `UPDATE access_tokens SET manually_revoked_timestamp = $1 WHERE token = $2 AND user_id = $3;`,
-      [new Date(), token, requesterUserId]
-    );
-    if (result.rowCount == 0) {
-      throw Error("Token not found.");
-    }
-  } catch (error) {
-    throw error;
-  }
-}
-
-/**
- * Updates the automatically_revoked_timestamp field of an access token.
- *
- * Will only update the access token if its owner is the requester user ID.
- * Besides permissions, no further checks are required.
- */
-export async function updateAccessTokenAutomaticallyRevokedTimestamp(
-  _scope: DALScope,
-  requesterUserId: string,
-  token: string
-) {
-  try {
-    const result = await db.query(
-      `UPDATE access_tokens SET automatically_revoked_timestamp = $1 WHERE token = $2 AND user_id = $3;`,
-      [new Date(), token, requesterUserId]
-    );
-    if (result.rowCount == 0) {
-      throw Error("Token not found.");
-    }
-  } catch (error) {
-    throw error;
-  }
-}
-
-//todo: move the userid-less functions to their own .ts file?
-
-/**
- * UserID-less function. CAN BE USED WITHOUT ACCESS TOKEN.
- * Adds a new access token.
- * Last use and creation timestamps will be set to now.
- */
-export async function addAccessToken(
-  _scope: DALScope,
-  token: string,
-  userId: string,
-  expirationTimestamp: Date
 ) {
   try {
     const now = new Date();
     const result = await db.query(
-      `INSERT INTO access_tokens (
-        token,
-        user_id,
-        expiration_timestamp,
-        last_use_timestamp,
-        creation_timestamp
-      )
-      VALUES (
-        $1, $2, $3, $4, $5
-      );`,
-      [token, userId, expirationTimestamp, now, now]
+      `UPDATE access_tokens SET manually_revoked_timestamp = $1 WHERE token = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp != NULL AND automatically_revoked_timestamp != NULL;`,
+      [now, token]
     );
     if (result.rowCount == 0) {
-      // todo: for all the insert into, is this actually useful? should we include this check? currently we only have this check  here.
       throw Error("Token not found.");
     }
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * An authenticated query that updates the automatically_revoked_timestamp field of an access token to now.
+ * Only updates it as long as the token is valid and not expired/revoked, otherwise treats it as if token doesn't exist.
+ *
+ * @throws Error If the access token doesn't exist.
+ * @throws Error If the database query fails.
+ */
+export async function updateAccessTokenAutomaticallyRevokedTimestamp(
+  _scope: DALScope,
+  token: string
+) {
+  try {
+    const now = new Date();
+    const result = await db.query(
+      `UPDATE access_tokens SET automatically_revoked_timestamp = $1 WHERE token = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp != NULL AND automatically_revoked_timestamp != NULL;`,
+      [now, token]
+    );
+    if (result.rowCount == 0) {
+      throw Error("Token not found.");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * An authenticated query that gets an access token. Returns even if revoked or expired.
+ *
+ * @throws Error If the database query fails.
+ * @returns null if the access token doesn't exist.
+ */
+
+export async function getAccessToken(
+  _scope: DALScope,
+  token: string
+): Promise<ServerAccessToken | null> {
+  try {
+    const result: QueryResult<ServerAccessToken> =
+      await db.query<ServerAccessToken>(
+        "SELECT * FROM ACCESS_TOKENS WHERE token = $1",
+        [token]
+      );
+    if (result.rows.length == 0) {
+      return null;
+    }
+    return result.rows[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * An authenticated query that gets an access token belonging to a user. Returns even if revoked or expired.
+ *
+ * @throws Error If the database query fails.
+ * @returns null if the access token doesn't exist for this user.
+ */
+
+export async function getAccessTokenBelongingToUser(
+  _scope: DALScope,
+  token: string,
+  userId: string
+): Promise<ServerAccessToken | null> {
+  try {
+    const result: QueryResult<ServerAccessToken> =
+      await db.query<ServerAccessToken>(
+        "SELECT * FROM ACCESS_TOKENS WHERE token = $1 AND user_id = $2",
+        [token, userId]
+      );
+    if (result.rows.length == 0) {
+      return null;
+    }
+    return result.rows[0];
   } catch (error) {
     throw error;
   }

@@ -1,6 +1,5 @@
 "use client";
 
-import { ClientUser } from "@/src/utils/client_types";
 import { useState } from "react";
 import {
   Card,
@@ -11,13 +10,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AdminActions_GetUsers_Result } from "@/src/actions/per-page/admin";
 
 export default function UserManagement({
   users,
   loading,
   errorString,
 }: {
-  users: ClientUser[] | null;
+  users: AdminActions_GetUsers_Result[] | null;
   loading: boolean;
   errorString: string;
 }) {

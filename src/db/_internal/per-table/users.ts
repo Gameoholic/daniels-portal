@@ -17,19 +17,20 @@ export interface ServerUser {
 }
 
 /**
- * Updates the default_token_expiry_seconds field of a user.
+ * An authenticated query that updates the default_token_expiry_seconds field of a user.
  *
- * Besides permissions, no further checks are required.
+ * @throws Error If the database query fails.
+ * @throws Error if the user doesn't exist.
  */
 export async function updateDefaultTokenExpiry(
   _scope: DALScope,
-  requesterUserId: string,
+  userId: string,
   expirySeconds: number
 ): Promise<void> {
   try {
     const result = await db.query(
       "UPDATE users SET default_token_expiry_seconds = $1 WHERE id = $2",
-      [expirySeconds, requesterUserId]
+      [expirySeconds, userId]
     );
     if (result.rowCount == 0) {
       throw Error("User doesn't exist.");
@@ -40,19 +41,20 @@ export async function updateDefaultTokenExpiry(
 }
 
 /**
- * Updates the max_tokens_at_a_time field of a user.
+ * An authenticated query that updates the max_tokesn_at_a_time field of a user.
  *
- * Besides permissions, no further checks are required.
+ * @throws Error If the database query fails.
+ * @throws Error if the user doesn't exist.
  */
 export async function updateMaxTokensAtATime(
   _scope: DALScope,
-  requesterUserId: string,
+  userId: string,
   max: number | null
 ): Promise<void> {
   try {
     const result = await db.query(
       "UPDATE users SET max_tokens_at_a_time = $1 WHERE id = $2",
-      [max, requesterUserId]
+      [max, userId]
     );
     if (result.rowCount == 0) {
       throw Error("User doesn't exist.");
@@ -63,21 +65,22 @@ export async function updateMaxTokensAtATime(
 }
 
 /**
- * Returns the user if it exists.
- * @param userId Optional: If null, will use the requester user ID.
+ * An authenticated query that gets the user.
+ *
+ * @throws Error If the database query fails.
+ * @returns null if the access token doesn't exist for this user.
  */
 export async function getUser(
   _scope: DALScope,
-  requesterUserId: string,
-  userId?: string
-): Promise<ServerUser> {
+  userId: string
+): Promise<ServerUser | null> {
   try {
     const result: QueryResult<ServerUser> = await db.query<ServerUser>(
       "SELECT * FROM users WHERE id = $1",
-      [userId ?? requesterUserId]
+      [userId]
     );
     if (result.rows.length == 0) {
-      throw Error("User doesn't exist.");
+      return null;
     }
     return result.rows[0];
   } catch (error) {
@@ -85,14 +88,36 @@ export async function getUser(
   }
 }
 
+/**
+ * An authenticated query that gets all users.
+ *
+ * @throws Error If the database query fails.
+ */
+export async function getAllUsers(_scope: DALScope): Promise<ServerUser[]> {
+  try {
+    const result: QueryResult<ServerUser> = await db.query<ServerUser>(
+      "SELECT * FROM users"
+    );
+    return result.rows;
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * An authenticated query that updates a user's last_login_timestamp field to now.
+ *
+ * @throws Error If the database query fails.
+ * @throws Error if the user doesn't exist.
+ */
 export async function updateUserLastLoginTimestamp(
   _scope: DALScope,
-  requesterUserId: string
+  userId: string
 ): Promise<void> {
   try {
     const result = await db.query(
       "UPDATE users SET last_login_timestamp = $1 WHERE id = $2",
-      [new Date(), requesterUserId]
+      [new Date(), userId]
     );
     if (result.rowCount == 0) {
       throw Error("User doesn't exist.");

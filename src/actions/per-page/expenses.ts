@@ -1,6 +1,6 @@
 "use server"; // All server actions must have this, turns this into callable from client. Otherwise, it turns into import("server-only") and then it's inaccessible to client
 import {
-  getExpenses,
+  getUserExpenses,
   ServerExpense,
 } from "@/src/db/_internal/per-table/expenses";
 import {
@@ -8,6 +8,8 @@ import {
   DatabaseQueryResult,
   executeDatabaseQuery,
   getAccessTokenFromBrowser,
+  GET_USER_ID_FROM_ACCESS_TOKEN,
+  databaseQueryError,
 } from "../../db/dal";
 
 import { cookies } from "next/headers";
@@ -31,12 +33,14 @@ export interface ExpensesActions_GetUserExpenses_Result {
 export async function getUserExpensesAction(): Promise<
   DatabaseQueryResult<ExpensesActions_GetUserExpenses_Result[]>
 > {
-  checkForPermission("use_app_book_keeping");
+  if (!(await checkForPermission("use_app_book_keeping")).success) {
+    return databaseQueryError("No permission.");
+  }
 
   const getUserQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
-    getExpenses,
-    []
+    getUserExpenses,
+    [GET_USER_ID_FROM_ACCESS_TOKEN]
   );
   if (!getUserQuery.success) {
     return getUserQuery;
@@ -44,6 +48,7 @@ export async function getUserExpensesAction(): Promise<
 
   const expenses: ServerExpense[] = getUserQuery.result;
   // todo: update last accessed timestamp for the expense. and somewhere else- also the last edited etc.
+  // todo: filter out deleted expenses.
 
   // Minimize data passed to client to only necessary data
   const minimizedDataExpenses: ExpensesActions_GetUserExpenses_Result[] =

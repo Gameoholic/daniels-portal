@@ -9,9 +9,14 @@ export interface ServerPermission {
   permission_name: string;
 }
 
+/**
+ * An authenticated query that gets all user's permissions.
+ *
+ * @throws Error If the database query fails.
+ */
 export async function getUserPermissions(
   _scope: DALScope,
-  requesterUserId: string
+  userId: string
 ): Promise<ServerPermission[]> {
   try {
     const result: QueryResult<ServerPermission> =
@@ -19,7 +24,7 @@ export async function getUserPermissions(
         `
         SELECT * FROM user_permissions WHERE user_id = $1
       `,
-        [requesterUserId]
+        [userId]
       );
     return result.rows;
   } catch (error) {

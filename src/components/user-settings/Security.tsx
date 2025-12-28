@@ -246,7 +246,8 @@ function AccessTokenLastUseTooltip() {
         <div className="max-h-50 max-w-100 m-1 space-y-1">
           <p className="text-wrap">
             The last time this token was used for any operation that requires
-            authentication (meaning opening a page, adding/deleting data, etc.)
+            authentication (meaning opening a page, accessing/updating data,
+            etc.)
           </p>
         </div>
       </TooltipContent>

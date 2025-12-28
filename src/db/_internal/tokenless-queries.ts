@@ -7,8 +7,9 @@ import { ServerPermission } from "@/src/db/_internal/per-table/permissions";
 import { ServerAccountCreationCode } from "@/src/db/_internal/per-table/account-creation-codes";
 
 /**
- * Returns all access tokens for user, regardless of whether the token is revoked or expired
- * Throws error if no tokens exist for this user.
+ * A tokenless query that returns all access tokens of a user, regardless of whether the token is revoked or expired.
+ *
+ * @throws Error If the database query fails.
  */
 export async function tokenless_getUserAccessTokens(
   _scope: DALTokenlessQueryScope,
@@ -20,9 +21,6 @@ export async function tokenless_getUserAccessTokens(
         "SELECT * FROM ACCESS_TOKENS WHERE user_id = $1",
         [userId]
       );
-    if (result.rows.length == 0) {
-      throw Error("No tokens exist for this user.");
-    }
     return result.rows;
   } catch (error) {
     throw error;
@@ -30,17 +28,18 @@ export async function tokenless_getUserAccessTokens(
 }
 
 /**
- * Updates the automatically_revoked_timestamp field of an access token.
+ * A tokenless query that updates the automatically_revoked_timestamp field of a token.
+ *
+ * @throws Error If the database query fails.
  */
 export async function tokenless_updateAccessTokenAutomaticallyRevokedTimestamp(
   _scope: DALTokenlessQueryScope,
-  userId: string,
   token: string
 ) {
   try {
     const result = await db.query(
-      `UPDATE access_tokens SET automatically_revoked_timestamp = $1 WHERE token = $2 AND user_id = $3;`,
-      [new Date(), token, userId]
+      `UPDATE access_tokens SET automatically_revoked_timestamp = $1 WHERE token = $2;`,
+      [new Date(), token]
     );
     if (result.rowCount == 0) {
       throw Error("Token not found.");
@@ -51,9 +50,10 @@ export async function tokenless_updateAccessTokenAutomaticallyRevokedTimestamp(
 }
 
 /**
- * UserID-less function. CAN BE USED WITHOUT ACCESS TOKEN.
- * Returns the user if it exists.
- * @param username The username of the user.
+ * A tokenless query that gets a user via its username. Returns null if doesn't exist.
+ *
+ * @throws Error If the database query fails.
+ * @throws Error If user doesn't exist.
  */
 export async function tokenless_getUserByUsername(
   _scope: DALTokenlessQueryScope,
@@ -73,7 +73,11 @@ export async function tokenless_getUserByUsername(
   }
 }
 
-// UserID-less function. CAN BE USED WITHOUT ACCESS TOKEN.
+/**
+ * A tokenless query that gets a user's permissions.
+ *
+ * @throws Error If the database query fails.
+ */
 export async function tokenless_getUserPermissions(
   _scope: DALTokenlessQueryScope,
   userId: string
@@ -92,6 +96,12 @@ export async function tokenless_getUserPermissions(
   }
 }
 
+/**
+ * A tokenless query that gets an account creation code, even if it's deleted, expired or used.
+ *
+ * @throws Error If the database query fails.
+ * @throws Error If account creation code doesn't exist.
+ */
 export async function tokenless_getAccountCreationCode(
   _scope: DALTokenlessQueryScope,
   code: string
@@ -112,6 +122,12 @@ export async function tokenless_getAccountCreationCode(
   }
 }
 
+/**
+ * A tokenless query that sets the used_timestamp of an account creation code to now.
+ *
+ * @throws Error If the database query fails.
+ * @throws Error If account creation code doesn't exist.
+ */
 export async function tokenless_setAccountCreationCodeUsed(
   _scope: DALTokenlessQueryScope,
   code: string
@@ -130,7 +146,9 @@ export async function tokenless_setAccountCreationCodeUsed(
 }
 
 /**
- * Will automatically set creation timestamp to now. Will set last login timestamp to null.
+ * A tokenless query that adds a user. The creation timestamp is set to now, and last login timestamp set to null.
+ *
+ * @throws Error If the database query fails.
  */
 export async function addUser(
   _scope: DALTokenlessQueryScope,
@@ -174,6 +192,13 @@ export async function addUser(
     throw error;
   }
 }
+
+/**
+ * A tokenless query that gets an access token. Returns even if revoked or expired.
+ *
+ * @throws Error If the database query fails.
+ * @throws Error If the token doesn't exist.
+ */
 
 export async function getAccessToken(
   _scope: DALTokenlessQueryScope,
@@ -229,4 +254,39 @@ export function isAccessTokenValid(
   }
 
   return { valid: true };
+}
+
+/**
+ * A tokenless query that adds an access token. Last use and creation timestamp will be set to now.
+ *
+ * @throws Error If the database query fails.
+ */
+export async function addAccessToken(
+  _scope: DALTokenlessQueryScope,
+  token: string,
+  userId: string,
+  expirationTimestamp: Date
+) {
+  try {
+    const now = new Date();
+    const result = await db.query(
+      `INSERT INTO access_tokens (
+        token,
+        user_id,
+        expiration_timestamp,
+        last_use_timestamp,
+        creation_timestamp
+      )
+      VALUES (
+        $1, $2, $3, $4, $5
+      );`,
+      [token, userId, expirationTimestamp, now, now]
+    );
+    if (result.rowCount == 0) {
+      // todo: for all the insert into, is this actually useful? should we include this check? currently we only have this check  here.
+      throw Error("Couldn't insert token.");
+    }
+  } catch (error) {
+    throw error;
+  }
 }

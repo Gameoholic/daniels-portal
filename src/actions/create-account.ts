@@ -84,7 +84,8 @@ export async function createAccountAction(
   }
 
   const userId = uuidv4();
-  const defaultTokenExpirySeconds = 60 * 60 * 24 * 7; // 1 week // todo move this to env variables
+  const defaultTokenExpirySeconds =
+    accountCreationCode.account_default_token_expiry_seconds;
   // Gen salt & hash password
   const salt = await bcrypt.genSalt(Number(process.env.BCRYPT_SALT_ROUNDS));
   const hashedPassword = await bcrypt.hash(plaintextPassword, salt);

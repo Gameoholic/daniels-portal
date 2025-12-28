@@ -7,6 +7,7 @@ import {
 import {
   DatabaseQueryResult,
   executeDatabaseQuery,
+  GET_USER_ID_FROM_ACCESS_TOKEN,
   getAccessTokenFromBrowser,
 } from "../db/dal";
 
@@ -24,7 +25,7 @@ export async function getUserPermissionsAction(): Promise<
   const getUserPermissionsQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUserPermissions,
-    []
+    [GET_USER_ID_FROM_ACCESS_TOKEN]
   );
   if (!getUserPermissionsQuery.success) {
     return getUserPermissionsQuery;

@@ -96,7 +96,7 @@ const initDbTables = async (): Promise<void> => {
         user_id UUID NOT NULL,
         expiration_timestamp TIMESTAMP NOT NULL,
         creation_timestamp TIMESTAMP NOT NULL,
-        last_use_timestamp TIMESTAMP,
+        last_use_timestamp TIMESTAMP NOT NULL,
         manually_revoked_timestamp TIMESTAMP,
         automatically_revoked_timestamp TIMESTAMP
       );
@@ -106,6 +106,7 @@ const initDbTables = async (): Promise<void> => {
       CREATE TABLE IF NOT EXISTS account_creation_codes (
         code VARCHAR PRIMARY KEY,
         email VARCHAR NOT NULL UNIQUE,
+        account_default_token_expiry_seconds INTEGER NOT NULL,
         expiration_timestamp TIMESTAMP NOT NULL,
         used_timestamp DATE,
         deletion_timestamp TIMESTAMP
@@ -114,6 +115,7 @@ const initDbTables = async (): Promise<void> => {
 
   const createUserPermissionsTableQuery = `
       CREATE TABLE IF NOT EXISTS user_permissions (
+        id UUID PRIMARY KEY,
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
         permission_name VARCHAR,
         PRIMARY KEY (user_id, permission_name)
@@ -122,10 +124,15 @@ const initDbTables = async (): Promise<void> => {
 
   // weight can be XXX.XX
   const createGymWeightTableQuery = `
-      CREATE TABLE IF NOT EXISTS gym_weight (
-        timestamp TIMESTAMP,
+      CREATE TABLE IF NOT EXISTS gym_weights (
+        id UUID PRIMARY KEY,
         user_id UUID NOT NULL,
-        amount NUMERIC(5, 2) NOT NULL
+        timestamp TIMESTAMP,
+        weight NUMERIC(5, 2) NOT NULL,
+        deletion_timestamp TIMESTAMP,
+        last_edited_timestamp TIMESTAMP,
+        last_accessed_timestamp TIMESTAMP NOT NULL,
+        creation_timestamp TIMESTAMP NOT NULL
       );
     `;
 
