@@ -150,11 +150,11 @@ export async function executeDatabaseQuery<T, Args extends readonly unknown[]>(
       }
     } else if (error instanceof Error) {
       // This should never happen
-      console.error("DB Query unknown error:", error.message, error);
+      //console.error("DB Query unknown error:", error.message, error);
       errorMessage = unknownErrorMessage1;
     } else {
       // This should even more, never happen
-      console.error("DB Query unknown error:", error);
+      //console.error("DB Query unknown error:", error);
       errorMessage = unknownErrorMessage2;
     }
     return { success: false, errorString: errorMessage };
@@ -207,11 +207,11 @@ export async function tokenless_executeDatabaseQuery<T, Args extends any[]>(
       }
     } else if (error instanceof Error) {
       // This should never happen
-      console.error("DB Query unknown error:", error.message, error);
+      //console.error("DB Query unknown error:", error.message, error);
       errorMessage = unknownErrorMessage1;
     } else {
       // This should even more, never happen
-      console.error("DB Query unknown error:", error);
+      //console.error("DB Query unknown error:", error);
       errorMessage = unknownErrorMessage2;
     }
     return { success: false, errorString: errorMessage };

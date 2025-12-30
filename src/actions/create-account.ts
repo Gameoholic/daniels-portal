@@ -66,7 +66,7 @@ export async function createAccountAction(
   if (!getUserByUsernameQuery.success) {
     return databaseQueryError("Internal error occurred.");
   }
-  if (getUserByUsernameQuery.result == null) {
+  if (getUserByUsernameQuery.result != null) {
     return databaseQueryError("Username already exists.");
   }
 

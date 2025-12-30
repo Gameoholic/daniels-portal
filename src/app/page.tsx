@@ -170,10 +170,6 @@ function LoginForm() {
         duration: 3000,
       });
     } else {
-      await cookieStore.set(
-        "access-token",
-        loginActionResult.result.accessToken
-      );
       router.push("/home");
       toast("Logged in", {
         description: "Redirecting to home...",
@@ -276,10 +272,6 @@ function CreateAccountForm({
           duration: 3000,
         });
       } else {
-        await cookieStore.set(
-          "access-token",
-          loginActionResult.result.accessToken
-        );
         router.push("/home");
         toast("Logged in", {
           description: "Redirecting to home...",

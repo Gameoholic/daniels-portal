@@ -21,6 +21,7 @@ import {
   ServerUser,
   updateUserLastLoginTimestamp,
 } from "@/src/db/_internal/per-table/users";
+import { cookies } from "next/headers";
 
 export interface LoginActions_LoginAction_Result {
   accessToken: string;
@@ -37,7 +38,7 @@ export async function loginAction(
     [username]
   );
   // If get user request failed, likely because username is incorrect:
-  if (!getUserRequest.success) {
+  if (!getUserRequest.success || getUserRequest.result == null) {
     const saltJustForShow = await bcrypt.genSalt(
       Number(process.env.BCRYPT_SALT_ROUNDS)
     );
@@ -98,6 +99,9 @@ export async function loginAction(
       errorString: "Could not update last login timestamp.",
     };
   }
+
+  const cookieStore = await cookies();
+  await cookieStore.set("access-token", token);
 
   return {
     success: true,

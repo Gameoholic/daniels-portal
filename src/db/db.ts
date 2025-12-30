@@ -115,9 +115,8 @@ const initDbTables = async (): Promise<void> => {
 
   const createUserPermissionsTableQuery = `
       CREATE TABLE IF NOT EXISTS user_permissions (
-        id UUID PRIMARY KEY,
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-        permission_name VARCHAR,
+        permission_name VARCHAR NOT NULL,
         PRIMARY KEY (user_id, permission_name)
       );
     `;
