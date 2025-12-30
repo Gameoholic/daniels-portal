@@ -87,7 +87,7 @@ export async function getAllUsersAction(): Promise<
         const canIssueAccountCreationCodes = permissions.includes(
           CREATE_CODES_PERMISSION
         );
-        const hasDangerousAdminPermissions = permissions.some((x) =>
+        const hasPrivilegedAdminPermissions = permissions.some((x) =>
           PRIVILEGED_ADMIN_PERMISSIONS.has(x)
         );
         return {
@@ -100,7 +100,7 @@ export async function getAllUsersAction(): Promise<
           maxTokensAtATime: user.max_tokens_at_a_time,
           permissions: permissions,
           canIssueAccountCreationCodes: canIssueAccountCreationCodes,
-          hasPrivilegedAdminPermissions: hasDangerousAdminPermissions,
+          hasPrivilegedAdminPermissions: hasPrivilegedAdminPermissions,
         };
       })
     );
