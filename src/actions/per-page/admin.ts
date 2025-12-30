@@ -29,7 +29,7 @@ export interface AdminActions_GetUsers_Result {
   maxTokensAtATime: number | null;
   permissions: string[];
   canIssueAccountCreationCodes: boolean;
-  hasDangerousAdminPermissions: boolean;
+  hasPrivilegedAdminPermissions: boolean;
 }
 /**
  * @returns User.
@@ -54,7 +54,7 @@ export async function getAllUsersAction(): Promise<
 
   const users: ServerUser[] = getAllUsersQuery.result;
 
-  const DANGEROUS_ADMIN_PERMISSIONS = new Set([
+  const PRIVILEGED_ADMIN_PERMISSIONS = new Set([
     "app_admin:search_users",
     "app_admin:admin_manage_users:delete_users",
     "app_admin:admin_manage_users:ban_users",
@@ -88,7 +88,7 @@ export async function getAllUsersAction(): Promise<
           CREATE_CODES_PERMISSION
         );
         const hasDangerousAdminPermissions = permissions.some((x) =>
-          DANGEROUS_ADMIN_PERMISSIONS.has(x)
+          PRIVILEGED_ADMIN_PERMISSIONS.has(x)
         );
         return {
           id: user.id,
@@ -100,7 +100,7 @@ export async function getAllUsersAction(): Promise<
           maxTokensAtATime: user.max_tokens_at_a_time,
           permissions: permissions,
           canIssueAccountCreationCodes: canIssueAccountCreationCodes,
-          hasDangerousAdminPermissions: hasDangerousAdminPermissions,
+          hasPrivilegedAdminPermissions: hasDangerousAdminPermissions,
         };
       })
     );

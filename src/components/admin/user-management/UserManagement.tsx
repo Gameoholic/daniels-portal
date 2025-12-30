@@ -136,7 +136,7 @@ export default function UserManagement({
 
                   {/* Icons + tooltips */}
                   <div className="flex gap-2">
-                    {user.hasDangerousAdminPermissions && (
+                    {user.hasPrivilegedAdminPermissions && (
                       <Tooltip>
                         <TooltipTrigger>
                           <ShieldAlert className="h-5 w-5 text-destructive cursor-pointer" />
