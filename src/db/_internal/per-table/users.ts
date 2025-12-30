@@ -68,7 +68,7 @@ export async function updateMaxTokensAtATime(
  * An authenticated query that gets the user.
  *
  * @throws Error If the database query fails.
- * @returns null if the access token doesn't exist for this user.
+ * @returns null if the user doesn't exist.
  */
 export async function getUser(
   _scope: DALScope,

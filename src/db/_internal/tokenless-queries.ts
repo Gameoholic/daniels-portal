@@ -50,22 +50,22 @@ export async function tokenless_updateAccessTokenAutomaticallyRevokedTimestamp(
 }
 
 /**
- * A tokenless query that gets a user via its username. Returns null if doesn't exist.
+ * A tokenless query that gets a user via its username.
  *
  * @throws Error If the database query fails.
- * @throws Error If user doesn't exist.
+ * @returns null if the user doesn't exist.
  */
 export async function tokenless_getUserByUsername(
   _scope: DALTokenlessQueryScope,
   username: string
-): Promise<ServerUser> {
+): Promise<ServerUser | null> {
   try {
     const result: QueryResult<ServerUser> = await db.query<ServerUser>(
       "SELECT * FROM users WHERE username = $1",
       [username]
     );
     if (result.rows.length == 0) {
-      throw Error("User doesn't exist.");
+      return null;
     }
     return result.rows[0];
   } catch (error) {

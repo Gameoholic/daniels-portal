@@ -36,7 +36,6 @@ import { Separator } from "@/components/ui/separator";
 import { ReactNode, useState } from "react";
 import SensitiveComponent from "../custom/sensitive-component";
 import { toast } from "sonner";
-import { Router, useRouter } from "next/router";
 import {
   revokeSelfTokenAction,
   revokeTokenAction,
@@ -161,6 +160,7 @@ function TokenRow({
         icon: <CheckCircle2Icon className="text-success-foreground w-5 h-5" />,
         duration: 3000,
       });
+      // can't do refresh here in components i think, only in app/ directory
     } catch (e) {
       alert("Failed to revoke token.");
     }

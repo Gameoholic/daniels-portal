@@ -16,7 +16,6 @@ export interface ServerAccessToken {
  * An authenticated query that returns all access tokens associated with the provided user ID.
  * This includes tokens that are expired or revoked.
  *
- * @throws Error If no access tokens exist for the target user.
  * @throws Error If the database query fails.
  */
 export async function getUserAccessTokens(
@@ -29,9 +28,6 @@ export async function getUserAccessTokens(
         "SELECT * FROM ACCESS_TOKENS WHERE user_id = $1",
         [userId]
       );
-    if (result.rows.length == 0) {
-      throw Error("No tokens exist for this user.");
-    }
     return result.rows;
   } catch (error) {
     throw error;

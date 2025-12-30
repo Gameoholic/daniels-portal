@@ -36,5 +36,44 @@ Internal queries:
 
 permissions:
 use_app_[appname]
-admin_search_users
+use_app_admin (by itself does nothing besides being able to visit the page)
+app_admin:admin_create_account_creation_codes // Allows you to only grant permissions you have yourself to other users (except for ALL admin permissions. even if you have all permissions.)
+app_admin:search_users
+app_admin:admin_manage_users:delete_users
+app_admin:admin_manage_users:manage_permissions_lite  // Allows you to only grant permissions you have yourself to other users (except for ALL admin permissions. even if you have all permissions.)
+app_admin:admin_manage_users:manage_permissions // MOST DANGEROUS, can grant all permissions to self...
+app_admin:admin_manage_users:ban_users
+app_admin:admin_manage_users:manage_access_tokens
 
+
+
+DROP TABLE ACCESS_TOKENS;
+DROP TABLE ACCOUNT_CREATION_CODES;
+DROP TABLE GYM_WEIGHT;
+DROP TABLE USERS;
+DROP TABLE EXPENSES;
+DROP TABLE USER_PERMISSIONS CASCADE;
+
+DELETE FROM USERS WHERE 'email' = 'user1@example.com';
+DELETE FROM ACCOUNT_CREATION_CODES WHERE code = '000000';
+INSERT INTO ACCOUNT_CREATION_CODES (code, email, account_default_token_expiry_seconds, expiration_timestamp, used_timestamp, deletion_timestamp) VALUES
+('000000', 'user1@example.com', 604800,'2027-05-15 23:59:59', NULL, NULL);
+INSERT INTO ACCOUNT_CREATION_CODES (code, email, account_default_token_expiry_seconds, expiration_timestamp, used_timestamp, deletion_timestamp) VALUES
+('000001', 'user5@example.com', 604800,'2027-05-15 23:59:59', NULL, NULL);
+
+
+SELECT * FROM ACCOUNT_CREATION_CODES;
+
+
+
+INSERT INTO GYM
+SELECT * FROM USERS;
+SELECT * FROM ACCESS_TOKENS;
+SELECT * FROM ACCOUNT_CREATION_CODES;
+SELECT * FROM EXPENSES;
+SELECT * FROM USER_PERMISSIONS;
+SELECT * FROM GYM_WEIGHT;
+
+
+INSERT INTO user_permissions (user_id, permission_name) VALUES
+  ('fb9914ec-5441-48b6-969e-75dcd427ff09', 'use_app_book_kee');

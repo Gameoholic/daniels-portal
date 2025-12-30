@@ -59,13 +59,14 @@ export async function createAccountAction(
   // Super minor security hole, but still would be nice to maybe fix one day. A fix would be to :
   // - Limit account creation code usage attempts (you've tried to create too many accounts with this code, please contact an administrator) <- More convenient but less secure
   // - To not let users select their own usernames (username would be created along with account creation code) <- Most secure but less convenient
-  if (
-    (
-      await tokenless_executeDatabaseQuery(tokenless_getUserByUsername, [
-        username,
-      ])
-    ).success
-  ) {
+  const getUserByUsernameQuery = await tokenless_executeDatabaseQuery(
+    tokenless_getUserByUsername,
+    [username]
+  );
+  if (!getUserByUsernameQuery.success) {
+    return databaseQueryError("Internal error occurred.");
+  }
+  if (getUserByUsernameQuery.result == null) {
     return databaseQueryError("Username already exists.");
   }
 
