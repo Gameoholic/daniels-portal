@@ -275,6 +275,7 @@ export function isAccessTokenValid(
 export async function addAccessToken(
   _scope: DALTokenlessQueryScope,
   token: string,
+  alias: string,
   userId: string,
   expirationTimestamp: Date
 ) {
@@ -283,15 +284,16 @@ export async function addAccessToken(
     const result = await db.query(
       `INSERT INTO access_tokens (
         token,
+        alias,
         user_id,
         expiration_timestamp,
         last_use_timestamp,
         creation_timestamp
       )
       VALUES (
-        $1, $2, $3, $4, $5
+        $1, $2, $3, $4, $5, $6
       );`,
-      [token, userId, expirationTimestamp, now, now]
+      [token, alias, userId, expirationTimestamp, now, now]
     );
     if (result.rowCount == 0) {
       // todo: for all the insert into, is this actually useful? should we include this check? currently we only have this check  here.

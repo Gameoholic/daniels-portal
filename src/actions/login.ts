@@ -73,12 +73,13 @@ export async function loginAction(
 
   // Finally, generate token
   const token = crypto.randomBytes(64).toString("base64url");
+  const alias = "alias-" + crypto.randomBytes(64).toString("base64url"); // we redact the actual token and only use alias in admin panel
   const expirationTimestamp = new Date(
     Date.now() + 1000 * user.default_token_expiry_seconds
   );
   const createAccessTokenRequest = await tokenless_executeDatabaseQuery(
     addAccessToken,
-    [token, user.id, expirationTimestamp]
+    [token, alias, user.id, expirationTimestamp]
   );
   if (!createAccessTokenRequest.success) {
     return {

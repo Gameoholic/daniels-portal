@@ -93,6 +93,7 @@ const initDbTables = async (): Promise<void> => {
   const createAccessTokensTableQuery = `
       CREATE TABLE IF NOT EXISTS access_tokens (
         token VARCHAR PRIMARY KEY,
+        alias VARCHAR NOT NULL UNIQUE,
         user_id UUID NOT NULL,
         expiration_timestamp TIMESTAMP NOT NULL,
         creation_timestamp TIMESTAMP NOT NULL,

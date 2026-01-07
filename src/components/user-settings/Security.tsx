@@ -186,13 +186,24 @@ function TokenRow({
   };
 
   return (
-    <div className="relative flex items-center gap-2">
-      {/* Revoke button at top-right */}
-      <span className="text-muted-foreground font-medium">Token:</span>{" "}
+    <div className="flex items-center justify-between">
+      <div className="flex gap-2 items-center">
+        <span className="text-muted-foreground font-medium">Token:</span>{" "}
+        {isCurrentlyUsedToken && (
+          <span className="text-sm font-semibold text-success-foreground bg-success px-2 py-0.75 rounded-full">
+            Current
+          </span>
+        )}
+        <SensitiveComponent blurAmount={8} secureLength={token.length}>
+          <span className="font-medium text-1xl text-muted-foreground">
+            {token}
+          </span>
+        </SensitiveComponent>
+      </div>
       <button
         onClick={handleRevoke}
         disabled={revoking}
-        className="absolute top-2 right-2 text-sm font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded hover:bg-destructive/20 transition"
+        className="text-sm font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded hover:bg-destructive/20 transition"
       >
         {isCurrentlyUsedToken
           ? revoking
@@ -202,16 +213,6 @@ function TokenRow({
           ? "Revoking..."
           : "Revoke"}
       </button>
-      {isCurrentlyUsedToken && (
-        <span className="text-sm font-semibold text-success-foreground bg-success px-2 py-0.5 rounded-full">
-          Current
-        </span>
-      )}
-      <SensitiveComponent blurAmount={8} secureLength={token.length}>
-        <span className="font-medium text-1xl text-muted-foreground">
-          {token}
-        </span>
-      </SensitiveComponent>
     </div>
   );
 }

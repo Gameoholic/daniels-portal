@@ -3,6 +3,8 @@
 import {
   getAccessToken,
   getUserAccessTokens,
+  updateAccessTokenManuallyRevokedTimestamp,
+  updateAccessTokenManuallyRevokedTimestampByAlias,
 } from "@/src/db/_internal/per-table/access-tokens";
 import {
   addUserPermission,
@@ -17,6 +19,7 @@ import {
   getUser,
   ServerUser,
 } from "@/src/db/_internal/per-table/users";
+import { isAccessTokenValid } from "@/src/db/_internal/tokenless-queries";
 import {
   checkForPermission,
   checkForPermissions,
@@ -123,7 +126,7 @@ export interface AdminActions_GetUser_Result_Permission {
 }
 
 export interface AdminActions_GetUser_Result_AccessToken {
-  aliasToken: string;
+  alias: string;
   creationTimestamp: Date;
   expirationTimestamp: Date;
   lastUseTimestamp: Date | null;
@@ -191,6 +194,12 @@ export async function getUserAction(
   }
   const user: ServerUser = getUserQuery.result;
 
+  // Filter out invalid access tokens
+  const allAccessTokens = getUserAccessTokensQuery.result;
+  const onlyValidAccessTokens = allAccessTokens.filter(
+    (x) => isAccessTokenValid(x).valid
+  );
+
   // Minimize data passed to client to only necessary data
   const minimizedDataUserPermissions: AdminActions_GetUser_Result_Permission[] =
     getUserPermissionsQuery.result.map((x) => ({
@@ -198,9 +207,8 @@ export async function getUserAction(
       description: PERMISSION_DATA[x.permission].description,
     }));
   const minimizedDataUserAccessTokens: AdminActions_GetUser_Result_AccessToken[] =
-    getUserAccessTokensQuery.result.map((x) => ({
-      aliasToken:
-        "thisistemporary_admin.ts action. add token-alias property to access token and pass that instead of this.",
+    onlyValidAccessTokens.map((x) => ({
+      alias: x.alias,
       creationTimestamp: x.creation_timestamp,
       expirationTimestamp: x.expiration_timestamp,
       lastUseTimestamp: x.last_use_timestamp,
@@ -313,4 +321,38 @@ export async function addUserPermissionAction(
   }
 
   return databaseQuerySuccess();
+}
+
+/**
+ * 'Manually' revokes a token using its alias.
+ */
+export async function revokeTokenAction(
+  tokenAlias: string
+): Promise<DatabaseQueryResult<void>> {
+  if (
+    !(
+      await checkForPermissions(
+        Permission.UseApp_Admin,
+        Permission.App_Admin_ManageUsers_ManageAccessTokens
+      )
+    ).success
+  ) {
+    return databaseQueryError("No permission.");
+  }
+
+  const updateAccessTokenManuallyRevokedTimestampQuery =
+    await executeDatabaseQuery(
+      await getAccessTokenFromBrowser(),
+      updateAccessTokenManuallyRevokedTimestampByAlias,
+      [tokenAlias]
+    );
+
+  if (!updateAccessTokenManuallyRevokedTimestampQuery.success) {
+    return { success: false, errorString: "Couldn't revoke access token." };
+  }
+
+  return {
+    success: true,
+    result: undefined, // void
+  };
 }

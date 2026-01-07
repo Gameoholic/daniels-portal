@@ -41,6 +41,7 @@ import { toast } from "sonner";
 import { PermissionData } from "@/src/app/admin/user-management/[userId]/page";
 import { DatabaseQueryResult } from "@/src/db/dal";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { Separator } from "@/components/ui/separator";
 
 /**
  *

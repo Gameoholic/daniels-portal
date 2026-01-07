@@ -4,6 +4,7 @@ import db from "@/src/db/db";
 
 export interface ServerAccessToken {
   token: string;
+  alias: string;
   user_id: string;
   creation_timestamp: Date;
   expiration_timestamp: Date;
@@ -50,6 +51,31 @@ export async function updateAccessTokenManuallyRevokedTimestamp(
     const result = await db.query(
       `UPDATE access_tokens SET manually_revoked_timestamp = $1 WHERE token = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp IS NULL AND automatically_revoked_timestamp IS NULL;`,
       [now, token]
+    );
+    if (result.rowCount == 0) {
+      throw Error("Token not found.");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * An authenticated query that updates the manually_revoked_timestamp field of an access token by alias, to now.
+ * Only updates it as long as the token is valid and not expired/revoked, otherwise treats it as if token doesn't exist.
+ *
+ * @throws Error If the access token doesn't exist.
+ * @throws Error If the database query fails.
+ */
+export async function updateAccessTokenManuallyRevokedTimestampByAlias(
+  _scope: DALScope,
+  tokenAlias: string
+) {
+  try {
+    const now = new Date();
+    const result = await db.query(
+      `UPDATE access_tokens SET manually_revoked_timestamp = $1 WHERE alias = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp IS NULL AND automatically_revoked_timestamp IS NULL;`,
+      [now, tokenAlias]
     );
     if (result.rowCount == 0) {
       throw Error("Token not found.");
