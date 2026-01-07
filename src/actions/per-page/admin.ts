@@ -1,8 +1,16 @@
+"use server";
+
 import {
   getAccessToken,
   getUserAccessTokens,
 } from "@/src/db/_internal/per-table/access-tokens";
-import { getUserPermissions } from "@/src/db/_internal/per-table/permissions";
+import {
+  assertIsPermission as assertIsKnownPermission,
+  deleteUserPermission,
+  getUserPermissions,
+  Permission,
+  PERMISSIONS_WITH_DESCRIPTIONS,
+} from "@/src/db/_internal/per-table/permissions";
 import {
   getAllUsers,
   getUser,
@@ -19,6 +27,11 @@ import {
   getAccessTokenFromBrowser,
 } from "@/src/db/dal";
 
+export interface AdminActions_GetUsers_Result_Permission {
+  name: string;
+  description: string;
+}
+
 export interface AdminActions_GetUsers_Result {
   id: string;
   username: string;
@@ -27,9 +40,7 @@ export interface AdminActions_GetUsers_Result {
   lastLoginTimestamp: Date | null;
   defaultTokenExpirySeconds: number;
   maxTokensAtATime: number | null;
-  permissions: string[];
-  canIssueAccountCreationCodes: boolean;
-  hasPrivilegedAdminPermissions: boolean;
+  permissions: AdminActions_GetUsers_Result_Permission[];
 }
 /**
  * @returns User.
@@ -38,7 +49,12 @@ export async function getAllUsersAction(): Promise<
   DatabaseQueryResult<AdminActions_GetUsers_Result[]>
 > {
   if (
-    !(await checkForPermissions("use_app_admin", "admin_search_users")).success
+    !(
+      await checkForPermissions(
+        Permission.UseApp_Admin,
+        Permission.App_Admin_SearchUsers
+      )
+    ).success
   ) {
     return databaseQueryError("No permission.");
   }
@@ -53,19 +69,6 @@ export async function getAllUsersAction(): Promise<
   }
 
   const users: ServerUser[] = getAllUsersQuery.result;
-
-  const PRIVILEGED_ADMIN_PERMISSIONS = new Set([
-    "app_admin:search_users",
-    "app_admin:admin_manage_users:delete_users",
-    "app_admin:admin_manage_users:ban_users",
-    "app_admin:admin_manage_users:manage_access_tokens",
-    "app_admin:admin_manage_users:manage_permissions",
-    "app_admin:admin_manage_users:manage_permissions_lite",
-  ]);
-
-  const CREATE_CODES_PERMISSION =
-    "app_admin:admin_create_account_creation_codes";
-
   // todo: fetching permissions for every user separately is expensive.
   // Minimize data passed to client to only necessary data
   // Get permissions for every user
@@ -81,15 +84,12 @@ export async function getAllUsersAction(): Promise<
           return null;
         }
 
-        const permissions = getUserPermissionsRequest.result.map(
-          (p) => p.permission_name
-        );
-        const canIssueAccountCreationCodes = permissions.includes(
-          CREATE_CODES_PERMISSION
-        );
-        const hasPrivilegedAdminPermissions = permissions.some((x) =>
-          PRIVILEGED_ADMIN_PERMISSIONS.has(x)
-        );
+        const permissions: AdminActions_GetUsers_Result_Permission[] =
+          getUserPermissionsRequest.result.map((x) => ({
+            name: x.permission,
+            description: PERMISSIONS_WITH_DESCRIPTIONS[x.permission],
+          }));
+
         return {
           id: user.id,
           username: user.username,
@@ -99,8 +99,6 @@ export async function getAllUsersAction(): Promise<
           defaultTokenExpirySeconds: user.default_token_expiry_seconds,
           maxTokensAtATime: user.max_tokens_at_a_time,
           permissions: permissions,
-          canIssueAccountCreationCodes: canIssueAccountCreationCodes,
-          hasPrivilegedAdminPermissions: hasPrivilegedAdminPermissions,
         };
       })
     );
@@ -114,6 +112,11 @@ export async function getAllUsersAction(): Promise<
   return databaseQuerySuccess(
     minimizedDataUsers as AdminActions_GetUsers_Result[] // we check earlier that none of it is null, this is just so compiler doesn't shout
   );
+}
+
+export interface AdminActions_GetUser_Result_Permission {
+  permission: string;
+  description: string;
 }
 
 export interface AdminActions_GetUser_Result_AccessToken {
@@ -131,7 +134,7 @@ export interface AdminActions_GetUser_Result {
   lastLoginTimestamp: Date | null;
   defaultTokenExpirySeconds: number;
   maxTokensAtATime: number | null;
-  permissions: string[];
+  permissions: AdminActions_GetUser_Result_Permission[];
   accessTokens: AdminActions_GetUser_Result_AccessToken[];
 }
 /**
@@ -141,60 +144,65 @@ export async function getUserAction(
   userId: string
 ): Promise<DatabaseQueryResult<AdminActions_GetUser_Result>> {
   if (
-    !(await checkForPermissions("use_app_admin", "app_admin:search_users"))
-      .success
+    !(
+      await checkForPermissions(
+        Permission.UseApp_Admin,
+        Permission.App_Admin_SearchUsers
+      )
+    ).success
   ) {
     return databaseQueryError("No permission.");
   }
 
-  const getUserActionPromise = executeDatabaseQuery(
+  const getUserQueryPromise = executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUser,
     [userId]
   );
 
-  const getUserPermissionsActionPromise = executeDatabaseQuery(
+  const getUserPermissionsQueryPromise = executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUserPermissions,
     [userId]
   );
 
-  const getUserAccessTokensActionPromise = executeDatabaseQuery(
+  const getUserAccessTokensQueryPromise = executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUserAccessTokens,
     [userId]
   );
 
-  const [
-    getUserActionResult,
-    getUserPermissionsActionResult,
-    getUserAccessTokensActionResult,
-  ] = await Promise.all([
-    getUserActionPromise,
-    getUserPermissionsActionPromise,
-    getUserAccessTokensActionPromise,
-  ]);
+  const [getUserQuery, getUserPermissionsQuery, getUserAccessTokensQuery] =
+    await Promise.all([
+      getUserQueryPromise,
+      getUserPermissionsQueryPromise,
+      getUserAccessTokensQueryPromise,
+    ]);
   if (
-    !getUserActionResult.success ||
-    getUserActionResult.result == null ||
-    !getUserPermissionsActionResult.success ||
-    !getUserAccessTokensActionResult.success
+    !getUserQuery.success ||
+    getUserQuery.result == null ||
+    !getUserPermissionsQuery.success ||
+    !getUserAccessTokensQuery.success
   ) {
     return databaseQueryError("Couldn't get some user data.");
   }
-  const user: ServerUser = getUserActionResult.result;
+  const user: ServerUser = getUserQuery.result;
 
   // Minimize data passed to client to only necessary data
-  const minimizedDataUserPermissions =
-    getUserPermissionsActionResult.result.map((x) => x.permission_name);
+  const minimizedDataUserPermissions: AdminActions_GetUser_Result_Permission[] =
+    getUserPermissionsQuery.result.map((x) => ({
+      permission: x.permission,
+      description: PERMISSIONS_WITH_DESCRIPTIONS[x.permission],
+    }));
   const minimizedDataUserAccessTokens: AdminActions_GetUser_Result_AccessToken[] =
-    getUserAccessTokensActionResult.result.map((x) => ({
+    getUserAccessTokensQuery.result.map((x) => ({
       aliasToken:
         "thisistemporary_admin.ts action. add token-alias property to access token and pass that instead of this.",
       creationTimestamp: x.creation_timestamp,
       expirationTimestamp: x.expiration_timestamp,
       lastUseTimestamp: x.last_use_timestamp,
     }));
+
   const minimizedDataUser: AdminActions_GetUser_Result = {
     id: user.id,
     username: user.username,
@@ -208,4 +216,51 @@ export async function getUserAction(
   };
 
   return databaseQuerySuccess(minimizedDataUser);
+}
+
+/**
+ *
+ */
+export async function deleteUserPermissionAction(
+  userId: string,
+  permissionToRemove: string
+): Promise<DatabaseQueryResult<void>> {
+  if (
+    !(
+      await checkForPermissions(
+        Permission.UseApp_Admin,
+        Permission.App_Admin_ManageUsers_ManagePermissions
+      )
+    ).success
+  ) {
+    return databaseQueryError("No permission.");
+  }
+
+  if (!assertIsKnownPermission(permissionToRemove)) {
+    return databaseQueryError("Permission doesn't exist.");
+  }
+
+  // Ensure that provided user ID is not self
+  const getUserQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    getUser,
+    [GET_USER_ID_FROM_ACCESS_TOKEN]
+  );
+  if (!getUserQuery.success || getUserQuery.result == null) {
+    return databaseQueryError("Couldn't delete permission.");
+  }
+  if (getUserQuery.result.id === userId) {
+    return databaseQueryError("Can't delete your own permissions.");
+  }
+
+  const deleteUserPermissionQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    deleteUserPermission,
+    [userId, permissionToRemove]
+  );
+  if (!deleteUserPermissionQuery.success) {
+    return databaseQueryError("Couldn't delete permission.");
+  }
+
+  return databaseQuerySuccess();
 }

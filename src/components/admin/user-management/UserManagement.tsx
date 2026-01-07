@@ -74,12 +74,10 @@ export default function UserManagement({
   users,
   loading,
   errorString,
-  canManageUsers,
 }: {
   users: AdminActions_GetUsers_Result[] | null;
   loading: boolean;
   errorString: string;
-  canManageUsers: boolean;
 }) {
   const [search, setSearch] = useState("");
 
@@ -133,8 +131,7 @@ export default function UserManagement({
                     <CardTitle className="text-lg">{user.username}</CardTitle>
                     <CardDescription>{user.email}</CardDescription>
                   </div>
-
-                  {/* Icons + tooltips */}
+                  {/* Icons + tooltips
                   <div className="flex gap-2">
                     {user.hasPrivilegedAdminPermissions && (
                       <Tooltip>
@@ -158,22 +155,7 @@ export default function UserManagement({
                         </TooltipContent>
                       </Tooltip>
                     )}
-
-                    {canManageUsers && (
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Pencil
-                            className="h-5 w-5 text-green-600 hover:text-green-700 cursor-pointer"
-                            onClick={() => {
-                              // TODO: open edit user modal / route
-                              console.log("Edit user:", user.id);
-                            }}
-                          />
-                        </TooltipTrigger>
-                        <TooltipContent>Edit user</TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div>
+                  </div> */}
                 </CardHeader>
 
                 <CardContent className="space-y-1">

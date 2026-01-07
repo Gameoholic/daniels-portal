@@ -34,17 +34,6 @@ Internal queries:
 
 
 
-permissions:
-use_app_[appname]
-use_app_admin (by itself does nothing besides being able to visit the page)
-app_admin:admin_create_account_creation_codes // Allows you to only grant permissions you have yourself to other users (except for ALL admin permissions. even if you have all permissions.)
-app_admin:search_users
-app_admin:admin_manage_users:delete_users
-app_admin:admin_manage_users:manage_permissions_lite  // Allows you to only grant permissions you have yourself to other users (except for ALL admin permissions. even if you have all permissions.)
-app_admin:admin_manage_users:manage_permissions // MOST DANGEROUS, can grant all permissions to self...
-app_admin:admin_manage_users:ban_users
-app_admin:admin_manage_users:manage_access_tokens
-
 
 
 DROP TABLE ACCESS_TOKENS;

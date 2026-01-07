@@ -13,6 +13,7 @@ import {
 } from "../../db/dal";
 
 import { cookies } from "next/headers";
+import { Permission } from "@/src/db/_internal/per-table/permissions";
 
 export interface ExpensesActions_GetUserExpenses_Result {
   id: string;
@@ -33,7 +34,7 @@ export interface ExpensesActions_GetUserExpenses_Result {
 export async function getUserExpensesAction(): Promise<
   DatabaseQueryResult<ExpensesActions_GetUserExpenses_Result[]>
 > {
-  if (!(await checkForPermission("use_app_book_keeping")).success) {
+  if (!(await checkForPermission(Permission.UseApp_BookKeeping)).success) {
     return databaseQueryError("No permission.");
   }
 

@@ -3,7 +3,11 @@ import { DALScope, DALTokenlessQueryScope } from "../dal";
 import db from "../db";
 import { ServerAccessToken } from "@/src/db/_internal/per-table/access-tokens";
 import { ServerUser } from "@/src/db/_internal/per-table/users";
-import { ServerPermission } from "@/src/db/_internal/per-table/permissions";
+import {
+  assertIsPermission,
+  DBPermissionRow,
+  ServerPermission,
+} from "@/src/db/_internal/per-table/permissions";
 import { ServerAccountCreationCode } from "@/src/db/_internal/per-table/account-creation-codes";
 
 /**
@@ -83,14 +87,21 @@ export async function tokenless_getUserPermissions(
   userId: string
 ): Promise<ServerPermission[]> {
   try {
-    const result: QueryResult<ServerPermission> =
-      await db.query<ServerPermission>(
-        `
-        SELECT * FROM user_permissions WHERE user_id = $1
-      `,
+    const result: QueryResult<DBPermissionRow> =
+      await db.query<DBPermissionRow>(
+        `SELECT * FROM user_permissions WHERE user_id = $1`,
         [userId]
       );
-    return result.rows;
+    return result.rows
+      .map((row) => {
+        const permission = assertIsPermission(row.permission_name);
+        if (!permission) return null;
+        return {
+          user_id: row.user_id,
+          permission,
+        };
+      })
+      .filter((x): x is ServerPermission => x !== null);
   } catch (error) {
     throw error;
   }

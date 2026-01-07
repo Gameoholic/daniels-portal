@@ -1,3 +1,5 @@
+"use client";
+
 import { Trash2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,10 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 export default function UserActionsTab({
-  canManageUsers,
   onUnimplemented,
 }: {
-  canManageUsers: boolean;
   onUnimplemented: (reason: string) => void;
 }) {
   return (
@@ -20,7 +20,7 @@ export default function UserActionsTab({
         <Separator />
         <Button
           variant="destructive"
-          disabled={!canManageUsers}
+          // disabled={!canManageUsers}
           onClick={() => onUnimplemented("Delete user permanently")}
         >
           <Trash2 className="h-4 w-4 mr-2" />

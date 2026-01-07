@@ -1,5 +1,8 @@
+import "server-only";
+
 import { getUserPermissionsAction } from "@/src/actions/permissions";
 import { SidebarClient, SidebarItem } from "./SidebarClient";
+import { Permission } from "@/src/db/_internal/per-table/permissions";
 
 export async function SidebarServer() {
   const getUserPermissionsActionResult = await getUserPermissionsAction();
@@ -10,48 +13,48 @@ export async function SidebarServer() {
   const userPermissions = getUserPermissionsActionResult.result;
 
   // All available nav items, regardless of user permissions
-  const navItems: (SidebarItem & { requiredPermission: string })[] = [
+  const navItems: (SidebarItem & { requiredPermission: Permission })[] = [
     {
       href: "/book-keeping",
       label: "Book Keeping",
       iconName: "Album",
-      requiredPermission: "use_app_book_keeping",
+      requiredPermission: Permission.UseApp_BookKeeping,
     },
     {
       href: "/gym",
       label: "Gym",
       iconName: "Dumbbell",
-      requiredPermission: "use_app_gym",
+      requiredPermission: Permission.UseApp_Gym,
     },
     {
       href: "/car",
       label: "Car",
       iconName: "Car",
-      requiredPermission: "use_app_car",
+      requiredPermission: Permission.UseApp_Car,
     },
     {
       href: "/wanikani",
       label: "Wanikani",
       iconName: "Languages",
-      requiredPermission: "use_app_wanikani",
+      requiredPermission: Permission.UseApp_Wanikani,
     },
     {
       href: "/obsidian",
       label: "Obsidian",
       iconName: "Pencil",
-      requiredPermission: "use_app_obsidian",
+      requiredPermission: Permission.UseApp_Obsidian,
     },
     {
       href: "/git",
       label: "Git",
       iconName: "GitFork",
-      requiredPermission: "use_app_git",
+      requiredPermission: Permission.UseApp_Git,
     },
     {
       href: "/admin",
       label: "Admin Panel",
       iconName: "UserStar",
-      requiredPermission: "use_app_admin",
+      requiredPermission: Permission.UseApp_Admin,
     },
   ];
 
@@ -59,7 +62,7 @@ export async function SidebarServer() {
   const navItemsForUser: SidebarItem[] = navItems
     .filter((item) =>
       userPermissions.some(
-        (permission) => permission.permissionName === item.requiredPermission
+        (permission) => permission.name === item.requiredPermission
       )
     )
     .map(({ requiredPermission, ...clientItem }) => clientItem); // remove requiredPermission

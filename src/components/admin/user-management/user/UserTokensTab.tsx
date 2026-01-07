@@ -1,3 +1,5 @@
+"use client";
+
 import { KeyRound } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,11 +13,9 @@ function formatDateTime(date: Date | null) {
 
 export default function UserTokensTab({
   user,
-  canManageUsers,
   onUnimplemented,
 }: {
   user: AdminActions_GetUser_Result;
-  canManageUsers: boolean;
   onUnimplemented: (reason: string) => void;
 }) {
   return (
@@ -48,7 +48,7 @@ export default function UserTokensTab({
                 {formatDateTime(token.lastUseTimestamp)}
               </p>
 
-              {canManageUsers && (
+              {/* {canManageUsers && (
                 <Button
                   size="sm"
                   variant="destructive"
@@ -59,7 +59,7 @@ export default function UserTokensTab({
                   <KeyRound className="h-4 w-4 mr-2" />
                   Revoke
                 </Button>
-              )}
+              )} */}
             </div>
           ))
         )}

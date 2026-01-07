@@ -10,7 +10,10 @@ import {
   verifyAccessTokenFromBrowser,
 } from "./db/dal";
 import { tokenless_getUserPermissions } from "./db/_internal/tokenless-queries";
-import { ServerPermission } from "@/src/db/_internal/per-table/permissions";
+import {
+  Permission,
+  ServerPermission,
+} from "@/src/db/_internal/per-table/permissions";
 
 // todo: clean up this entire logic
 export async function middleware(req: NextRequest) {
@@ -88,7 +91,7 @@ export async function middleware(req: NextRequest) {
   if (
     (path === "/admin" || path.startsWith("/admin")) &&
     userPermissions.some(
-      (permission) => permission.permission_name === "use_app_admin"
+      (permission) => permission.permission === Permission.UseApp_Admin
     )
   ) {
     return NextResponse.next();
@@ -97,7 +100,7 @@ export async function middleware(req: NextRequest) {
   if (
     (path === "/book-keeping" || path.startsWith("/book-keeping/")) &&
     userPermissions.some(
-      (permission) => permission.permission_name === "use_app_book_keeping"
+      (permission) => permission.permission === Permission.UseApp_BookKeeping
     )
   ) {
     return NextResponse.next();
@@ -106,19 +109,11 @@ export async function middleware(req: NextRequest) {
   if (
     (path === "/gym" || path.startsWith("/gym/")) &&
     userPermissions.some(
-      (permission) => permission.permission_name === "use_app_gym"
+      (permission) => permission.permission === Permission.UseApp_Gym
     )
   ) {
     return NextResponse.next();
   }
 
-  if (
-    (path === "/car" || path.startsWith("/car/")) &&
-    userPermissions.some(
-      (permission) => permission.permission_name === "use_app_car"
-    )
-  ) {
-    return NextResponse.next();
-  }
   return NextResponse.json({ error: "Page does not exist." }, { status: 401 });
 }

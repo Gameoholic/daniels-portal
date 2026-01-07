@@ -14,6 +14,7 @@ import {
 } from "../../db/dal";
 
 import { cookies } from "next/headers";
+import { Permission } from "@/src/db/_internal/per-table/permissions";
 
 export interface GymActions_GetUserGymWeights_Result {
   id: string;
@@ -24,7 +25,7 @@ export interface GymActions_GetUserGymWeights_Result {
 export async function getUserGymWeightsAction(): Promise<
   DatabaseQueryResult<GymActions_GetUserGymWeights_Result[]>
 > {
-  if (!(await checkForPermission("use_app_gym")).success) {
+  if (!(await checkForPermission(Permission.UseApp_Gym)).success) {
     return databaseQueryError("No permission.");
   }
 
@@ -61,7 +62,7 @@ export interface GymActions_AddGymWeight_GymWeightParameter {
 export async function addGymWeightAction(
   gymWeight: GymActions_AddGymWeight_GymWeightParameter
 ): Promise<DatabaseQueryResult<void>> {
-  if (!(await checkForPermission("use_app_gym")).success) {
+  if (!(await checkForPermission(Permission.UseApp_Gym)).success) {
     return databaseQueryError("No permission.");
   }
 

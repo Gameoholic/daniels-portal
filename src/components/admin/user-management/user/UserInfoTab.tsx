@@ -1,6 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AdminActions_GetUser_Result } from "@/src/actions/per-page/admin";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { CircleQuestionMark } from "lucide-react";
+import SensitiveComponent from "@/src/components/custom/sensitive-component";
 
 function formatDateTime(date: Date | null) {
   if (!date) return "—";
@@ -15,68 +22,87 @@ export default function UserInfoTab({
   isEditing: boolean;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>User Info & Status</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4 text-sm">
-        <div>
-          <p className="font-medium">Email</p>
-          {isEditing ? (
-            <Input defaultValue={user.email} />
-          ) : (
-            <p className="text-muted-foreground">{user.email}</p>
+    <div className="flex flex-col gap-2">
+      <div>
+        <p className="font-medium mb-1">Email</p>
+        <SensitiveComponent secureLength={user?.email.length}>
+          <span className="font-medium text-1xl text-muted-foreground">
+            {user?.email}
+          </span>
+        </SensitiveComponent>
+      </div>
+
+      <div>
+        <p className="font-medium">Created</p>
+        <p className="text-muted-foreground">
+          {formatDateTime(user.creationTimestamp)}
+        </p>
+      </div>
+
+      <div>
+        <div className="flex items-center gap-1">
+          <span className="font-medium">Last login</span>
+          <LastLoginTooltip />
+        </div>
+        <p className="text-muted-foreground">
+          {formatDateTime(user.lastLoginTimestamp)}
+        </p>
+      </div>
+
+      <div>
+        <div className="flex items-center gap-1">
+          <span className="font-medium">Last account usage</span>
+          <LastAccountUsageTooltip />
+        </div>
+        <p className="text-muted-foreground">
+          {formatDateTime(
+            user.accessTokens
+              .filter((x) => x.lastUseTimestamp != null)
+              .sort(
+                (a, b) =>
+                  b.lastUseTimestamp!.getTime() - a.lastUseTimestamp!.getTime()
+              )
+              .at(0)?.lastUseTimestamp ?? null
           )}
-        </div>
+        </p>
+      </div>
+    </div>
+  );
+}
 
-        <div>
-          <p className="font-medium">User ID</p>
-          <p className="text-muted-foreground">{user.id}</p>
-        </div>
-
-        <div>
-          <p className="font-medium">Created</p>
-          <p className="text-muted-foreground">
-            {formatDateTime(user.creationTimestamp)}
+function LastLoginTooltip() {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <CircleQuestionMark className="h-5 w-5 text-muted-foreground" />
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="max-h-50 max-w-100 m-1 space-y-1">
+          <p className="text-wrap">
+            The last successful log in made on this account using a password.
+            This does not include devices accessing the account via pre-existing
+            access tokens.
           </p>
         </div>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
-        <div>
-          <p className="font-medium">Last login</p>
-          <p className="text-muted-foreground">
-            {formatDateTime(user.lastLoginTimestamp)}
+function LastAccountUsageTooltip() {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <CircleQuestionMark className="h-5 w-5 text-muted-foreground" />
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="max-h-50 max-w-100 m-1 space-y-1">
+          <p className="text-wrap">
+            The last time any access token was used to access the website (can
+            be opening a page, changing/accessing data, etc.)
           </p>
         </div>
-
-        <div>
-          <p className="font-medium">Default token expiry (seconds)</p>
-          {isEditing ? (
-            <Input
-              type="number"
-              defaultValue={user.defaultTokenExpirySeconds}
-            />
-          ) : (
-            <p className="text-muted-foreground">
-              {user.defaultTokenExpirySeconds}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <p className="font-medium">Max tokens at a time</p>
-          {isEditing ? (
-            <Input
-              type="number"
-              defaultValue={user.maxTokensAtATime ?? ""}
-              placeholder="Unlimited"
-            />
-          ) : (
-            <p className="text-muted-foreground">
-              {user.maxTokensAtATime ?? "Unlimited"}
-            </p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      </TooltipContent>
+    </Tooltip>
   );
 }

@@ -11,7 +11,10 @@ import {
   tokenless_getUserPermissions,
 } from "./_internal/tokenless-queries";
 import { ServerAccessToken } from "@/src/db/_internal/per-table/access-tokens";
-import { getUserPermissions } from "@/src/db/_internal/per-table/permissions";
+import {
+  getUserPermissions,
+  Permission,
+} from "@/src/db/_internal/per-table/permissions";
 
 declare const AuthorizedDALScope: unique symbol;
 declare const AuthorizedDALTokenlessScope: unique symbol;
@@ -313,10 +316,10 @@ async function updateAccessTokenLastUseTimestamp(
 
 /**
  *
- * @returns Whether the user has a certain permission
+ * @returns Whether the user (using the access token from the browser) has a certain permission
  */
 export async function checkForPermission(
-  permissionName: string
+  permission: Permission
 ): Promise<DatabaseQueryResult<void>> {
   const getUserPermissionsQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
@@ -326,11 +329,7 @@ export async function checkForPermission(
   if (!getUserPermissionsQuery.success) {
     return databaseQueryError("An error has occurred.");
   }
-  if (
-    !getUserPermissionsQuery.result.find(
-      (x) => x.permission_name == permissionName
-    )
-  ) {
+  if (!getUserPermissionsQuery.result.find((x) => x.permission == permission)) {
     return databaseQueryError("No permission.");
   }
 
@@ -340,10 +339,10 @@ export async function checkForPermission(
 // todo: this method can be optimized by calling the getUserPermissions query just once instead of once per permission
 /**
  *
- * @returns Whether the user has all the specified permissions
+ * @returns Whether the user (using the access token from the browser) has all the specified permissions
  */
 export async function checkForPermissions(
-  ...permissionNames: string[]
+  ...permissionNames: Permission[]
 ): Promise<DatabaseQueryResult<void>> {
   for (const permission of permissionNames) {
     if (!(await checkForPermission(permission)).success) {
