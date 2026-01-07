@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Save, X } from "lucide-react";
+import { ArrowLeft, Pencil, Save, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,7 +23,7 @@ import UserPermissionsTab from "@/src/components/admin/user-management/user/User
 import UserTokensTab from "@/src/components/admin/user-management/user/UserTokensTab";
 import UserActionsTab from "@/src/components/admin/user-management/user/UserActionsTab";
 import { PermissionData } from "@/src/app/admin/user-management/[userId]/page";
-import { DatabaseQueryResult } from "@/src/db/dal";
+import { useRouter } from "next/navigation";
 
 /**
  *
@@ -48,6 +48,8 @@ export default function UserManagementUser({
   userPermissions: Record<string, PermissionData>;
   availablePermissions: Record<string, PermissionData>;
 }) {
+  const router = useRouter();
+
   const [isEditing, setIsEditing] = useState(false);
   const [showUnimplemented, setShowUnimplemented] = useState(false);
   const [unimplementedReason, setUnimplementedReason] = useState("");
@@ -76,46 +78,17 @@ export default function UserManagementUser({
   return (
     <>
       <div className="p-6 space-y-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {user.username}
-            </h1>
-            <p className="text-sm text-muted-foreground">ID: {user.id}</p>
-          </div>
-
-          {/* {canManageUsers && (
-            <div className="flex gap-2">
-              {isEditing ? (
-                <>
-                  <Button
-                    size="sm"
-                    onClick={() => triggerUnimplemented("Save user changes")}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setIsEditing(false)}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Cancel
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setIsEditing(true)}
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              )}
-            </div>
-          )} */}
+        <div>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/admin/user-management/")}
+            className="gap-1 text-xs mb-3"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            All Users
+          </Button>
+          <h1 className="text-2xl font-semibold">{user.username}</h1>
+          <p className="text-sm text-muted-foreground">ID: {user.id}</p>
         </div>
 
         <Tabs defaultValue="info">
