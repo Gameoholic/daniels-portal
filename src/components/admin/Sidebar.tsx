@@ -18,7 +18,7 @@ import {
 import LogOutButton from "../global/LogOutButton";
 
 const navItems = [
-  { href: "/admin/", label: "Dashboard", icon: Home },
+  { href: "/admin", label: "Dashboard", icon: Home },
   {
     href: "/admin/account-creation-codes",
     label: "Account Creation Codes",

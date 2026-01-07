@@ -23,7 +23,7 @@ import {
 import LogOutButton from "../global/LogOutButton";
 
 const navItems = [
-  { href: "/user-settings/", label: "Security", icon: Shield },
+  { href: "/user-settings", label: "Security", icon: Shield },
   {
     href: "/user-settings/advanced-settings",
     label: "Advanced Settings",

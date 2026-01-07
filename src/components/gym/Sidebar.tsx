@@ -27,7 +27,7 @@ import { requestRevokeAccessToken } from "@/src/utils/db/auth/db_actions";
 import LogOutButton from "../global/LogOutButton";
 
 const navItems = [
-  { href: "/gym/", label: "Dashboard", icon: Home },
+  { href: "/gym", label: "Dashboard", icon: Home },
   {
     href: "/gym/map",
     label: "Map",
