@@ -54,7 +54,9 @@ export function Sidebar() {
         {/* top */}
         <div>
           {navItems.map(({ href, label, icon: Icon }) => {
-            const isActive = pathname == href;
+            const isActive =
+              (href === navItems[0].href && pathname == navItems[0].href) ||
+              (href !== navItems[0].href && pathname.startsWith(href)); // band-aid but better than nothing
             return (
               <Link
                 key={href}

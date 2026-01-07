@@ -35,6 +35,7 @@ export default async function UserPage({
             loading={true}
             errorString=""
             canManagePermissions={false}
+            canManageAccessTokens={false}
             availablePermissions={{}}
             userPermissions={{}}
           />
@@ -63,11 +64,14 @@ async function UserDataLoader({ userId }: { userId: string }) {
 
   let availablePermissions: Record<string, PermissionData> = {};
   let canManagePermissions = false;
-  let canManagePermissionsLite = false;
+  let canManageAccessTokens = false;
   if (getAdminUserPermissionsActionResult.success) {
     const adminUserPermissions = getAdminUserPermissionsActionResult.result;
     canManagePermissions = adminUserPermissions.some(
       (x) => x.name === Permission.App_Admin_ManageUsers_ManagePermissions
+    );
+    canManageAccessTokens = adminUserPermissions.some(
+      (x) => x.name === Permission.App_Admin_ManageUsers_ManageAccessTokens
     );
 
     if (canManagePermissions) {
@@ -98,7 +102,8 @@ async function UserDataLoader({ userId }: { userId: string }) {
       errorString={
         getUserActionResult.success ? "" : getUserActionResult.errorString
       }
-      canManagePermissions={canManagePermissions || canManagePermissionsLite}
+      canManagePermissions={canManagePermissions}
+      canManageAccessTokens={canManageAccessTokens}
       availablePermissions={availablePermissions}
       userPermissions={userPermissions}
     />

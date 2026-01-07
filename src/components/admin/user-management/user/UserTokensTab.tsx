@@ -159,7 +159,7 @@ function TokenRow({
         </span>
       </div>
 
-      {canManageTokens ?? (
+      {canManageTokens ? (
         <button
           onClick={handleRevoke}
           disabled={revoking}
@@ -167,7 +167,7 @@ function TokenRow({
         >
           {revoking ? "Revoking..." : "Revoke"}
         </button>
-      )}
+      ) : null}
     </div>
   );
 }

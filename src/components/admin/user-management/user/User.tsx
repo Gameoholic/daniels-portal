@@ -36,6 +36,7 @@ export default function UserManagementUser({
   loading,
   errorString,
   canManagePermissions,
+  canManageAccessTokens,
   userPermissions,
   availablePermissions,
 }: {
@@ -43,6 +44,7 @@ export default function UserManagementUser({
   loading: boolean;
   errorString: string;
   canManagePermissions: boolean;
+  canManageAccessTokens: boolean;
   userPermissions: Record<string, PermissionData>;
   availablePermissions: Record<string, PermissionData>;
 }) {
@@ -139,7 +141,10 @@ export default function UserManagementUser({
           </TabsContent>
 
           <TabsContent value="access-tokens" className="pt-3">
-            <UserTokensTab user={user} onUnimplemented={triggerUnimplemented} />
+            <UserTokensTab
+              user={user}
+              canManageTokens={canManageAccessTokens}
+            />
           </TabsContent>
 
           <TabsContent value="actions" className="pt-3">
