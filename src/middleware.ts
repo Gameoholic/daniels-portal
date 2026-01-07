@@ -14,6 +14,7 @@ import {
   Permission,
   ServerPermission,
 } from "@/src/db/_internal/per-table/permissions";
+import { forbidden } from "next/navigation";
 
 // todo: clean up this entire logic
 export async function middleware(req: NextRequest) {

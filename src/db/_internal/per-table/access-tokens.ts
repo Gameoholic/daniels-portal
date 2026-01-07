@@ -48,7 +48,7 @@ export async function updateAccessTokenManuallyRevokedTimestamp(
   try {
     const now = new Date();
     const result = await db.query(
-      `UPDATE access_tokens SET manually_revoked_timestamp = $1 WHERE token = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp != NULL AND automatically_revoked_timestamp != NULL;`,
+      `UPDATE access_tokens SET manually_revoked_timestamp = $1 WHERE token = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp IS NULL AND automatically_revoked_timestamp IS NULL;`,
       [now, token]
     );
     if (result.rowCount == 0) {
@@ -73,7 +73,7 @@ export async function updateAccessTokenAutomaticallyRevokedTimestamp(
   try {
     const now = new Date();
     const result = await db.query(
-      `UPDATE access_tokens SET automatically_revoked_timestamp = $1 WHERE token = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp != NULL AND automatically_revoked_timestamp != NULL;`,
+      `UPDATE access_tokens SET automatically_revoked_timestamp = $1 WHERE token = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp IS NULL AND automatically_revoked_timestamp IS NULL;`,
       [now, token]
     );
     if (result.rowCount == 0) {

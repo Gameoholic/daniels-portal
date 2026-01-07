@@ -5,11 +5,12 @@ import {
   getUserAccessTokens,
 } from "@/src/db/_internal/per-table/access-tokens";
 import {
+  addUserPermission,
   assertIsPermission as assertIsKnownPermission,
   deleteUserPermission,
   getUserPermissions,
   Permission,
-  PERMISSIONS_WITH_DESCRIPTIONS,
+  PERMISSION_DATA,
 } from "@/src/db/_internal/per-table/permissions";
 import {
   getAllUsers,
@@ -26,6 +27,7 @@ import {
   GET_USER_ID_FROM_ACCESS_TOKEN,
   getAccessTokenFromBrowser,
 } from "@/src/db/dal";
+import { forbidden } from "next/navigation";
 
 export interface AdminActions_GetUsers_Result_Permission {
   name: string;
@@ -43,6 +45,7 @@ export interface AdminActions_GetUsers_Result {
   permissions: AdminActions_GetUsers_Result_Permission[];
 }
 /**
+ * Returns all users with less data, only to display in the search view.
  * @returns User.
  */
 export async function getAllUsersAction(): Promise<
@@ -87,7 +90,7 @@ export async function getAllUsersAction(): Promise<
         const permissions: AdminActions_GetUsers_Result_Permission[] =
           getUserPermissionsRequest.result.map((x) => ({
             name: x.permission,
-            description: PERMISSIONS_WITH_DESCRIPTIONS[x.permission],
+            description: PERMISSION_DATA[x.permission].description,
           }));
 
         return {
@@ -192,7 +195,7 @@ export async function getUserAction(
   const minimizedDataUserPermissions: AdminActions_GetUser_Result_Permission[] =
     getUserPermissionsQuery.result.map((x) => ({
       permission: x.permission,
-      description: PERMISSIONS_WITH_DESCRIPTIONS[x.permission],
+      description: PERMISSION_DATA[x.permission].description,
     }));
   const minimizedDataUserAccessTokens: AdminActions_GetUser_Result_AccessToken[] =
     getUserAccessTokensQuery.result.map((x) => ({
@@ -260,6 +263,53 @@ export async function deleteUserPermissionAction(
   );
   if (!deleteUserPermissionQuery.success) {
     return databaseQueryError("Couldn't delete permission.");
+  }
+
+  return databaseQuerySuccess();
+}
+
+/**
+ *
+ */
+export async function addUserPermissionAction(
+  userId: string,
+  permissionToAdd: string
+): Promise<DatabaseQueryResult<void>> {
+  if (
+    !(
+      await checkForPermissions(
+        Permission.UseApp_Admin,
+        Permission.App_Admin_ManageUsers_ManagePermissions
+      )
+    ).success
+  ) {
+    return databaseQueryError("No permission.");
+  }
+
+  if (!assertIsKnownPermission(permissionToAdd)) {
+    return databaseQueryError("Permission doesn't exist.");
+  }
+
+  // Ensure that provided user ID is not self
+  const getUserQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    getUser,
+    [GET_USER_ID_FROM_ACCESS_TOKEN]
+  );
+  if (!getUserQuery.success || getUserQuery.result == null) {
+    return databaseQueryError("Couldn't add permission.");
+  }
+  if (getUserQuery.result.id === userId) {
+    return databaseQueryError("Can't add permissions to yourself.");
+  }
+
+  const addUserPermissionQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    addUserPermission,
+    [userId, permissionToAdd]
+  );
+  if (!addUserPermissionQuery.success) {
+    return databaseQueryError("Couldn't add permission.");
   }
 
   return databaseQuerySuccess();

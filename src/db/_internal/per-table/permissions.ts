@@ -4,6 +4,11 @@ import { QueryResult } from "pg";
 import { DALScope } from "@/src/db/dal";
 import db from "@/src/db/db";
 
+export enum PermissionCategory {
+  App = "Use App",
+  Admin = "Admin",
+}
+
 export enum Permission {
   UseApp_Gym = "use_app_gym",
   UseApp_BookKeeping = "use_app_book_keeping",
@@ -23,30 +28,90 @@ export enum Permission {
   App_Admin_ManageUsers_ManageAccessTokens = "app_admin:manage_users:manage_access_tokens",
 }
 
-export const PERMISSIONS_WITH_DESCRIPTIONS: Record<Permission, string> = {
-  [Permission.UseApp_Gym]: "Allows usage of the gym app.",
-  [Permission.UseApp_BookKeeping]: "Allows usage of the book keeping app.",
-  [Permission.UseApp_Expenses]: "Allows usage of the expenses app.",
-  [Permission.UseApp_Car]: "Allows usage of the car app.",
-  [Permission.UseApp_Wanikani]: "Allows usage of the WaniKani app.",
-  [Permission.UseApp_Obsidian]: "Allows usage of the Obsidian app.",
-  [Permission.UseApp_Git]: "Allows usage of the Git app..",
-  [Permission.UseApp_Admin]:
-    "Allows usage of the admin app where the user can utilize the rest of their admin permissions. If just by itself, it doesn't really allow anything besides allowing access to an empty page.",
+export interface PermissionData {
+  description: string;
+  category: PermissionCategory;
+  isPrivileged: boolean;
+}
 
-  [Permission.App_Admin_ManageAccountCreationCodes]:
-    "Allows viewing, issuing and managing account creation codes. Coupled with the permission management permission, can add permissions to user immediately.",
-  [Permission.App_Admin_SearchUsers]:
-    "Allows searching users and accessing their data (including: basic user data, redacted access tokens, permissions).",
+/** Permission metadata object */
+export const PERMISSION_DATA: Record<Permission, PermissionData> = {
+  [Permission.UseApp_Gym]: {
+    description: "Allows usage of the gym app.",
+    category: PermissionCategory.App,
+    isPrivileged: false,
+  },
+  [Permission.UseApp_BookKeeping]: {
+    description: "Allows usage of the book keeping app.",
+    category: PermissionCategory.App,
+    isPrivileged: false,
+  },
+  [Permission.UseApp_Expenses]: {
+    description: "Allows usage of the expenses app.",
+    category: PermissionCategory.App,
+    isPrivileged: false,
+  },
+  [Permission.UseApp_Car]: {
+    description: "Allows usage of the car app.",
+    category: PermissionCategory.App,
+    isPrivileged: false,
+  },
+  [Permission.UseApp_Wanikani]: {
+    description: "Allows usage of the WaniKani app.",
+    category: PermissionCategory.App,
+    isPrivileged: false,
+  },
+  [Permission.UseApp_Obsidian]: {
+    description: "Allows usage of the Obsidian app.",
+    category: PermissionCategory.App,
+    isPrivileged: false,
+  },
+  [Permission.UseApp_Git]: {
+    description: "Allows usage of the Git app.",
+    category: PermissionCategory.App,
+    isPrivileged: false,
+  },
+  [Permission.UseApp_Admin]: {
+    description:
+      "Allows usage of the admin app where the user can utilize other admin permissions.",
+    category: PermissionCategory.Admin,
+    isPrivileged: true,
+  },
 
-  [Permission.App_Admin_ManageUsers_DeleteUsers]:
-    "Allows permanently deleting user accounts.",
-  [Permission.App_Admin_ManageUsers_ManagePermissions]:
-    "MOST DANGEROUS: Allows granting and revoking any permissions, including to yourself.",
-  [Permission.App_Admin_ManageUsers_BanUsers]:
-    "Allows banning and unbanning users.",
-  [Permission.App_Admin_ManageUsers_ManageAccessTokens]:
-    "Allows revoking and managing user access tokens.",
+  [Permission.App_Admin_ManageAccountCreationCodes]: {
+    description: "Allows viewing, issuing and managing account creation codes.",
+    category: PermissionCategory.Admin,
+    isPrivileged: true,
+  },
+  [Permission.App_Admin_SearchUsers]: {
+    description:
+      "Allows searching users and accessing their data (basic info, redacted access tokens, permissions).",
+    category: PermissionCategory.Admin,
+    isPrivileged: true,
+  },
+
+  [Permission.App_Admin_ManageUsers_DeleteUsers]: {
+    description: "Allows permanently deleting user accounts (excluding self).",
+    category: PermissionCategory.Admin,
+    isPrivileged: true,
+  },
+  [Permission.App_Admin_ManageUsers_ManagePermissions]: {
+    description:
+      "Allows granting and revoking ANY permissions to ANYONE (excluding self).",
+    category: PermissionCategory.Admin,
+    isPrivileged: true,
+  },
+  [Permission.App_Admin_ManageUsers_BanUsers]: {
+    description: "Allows banning and unbanning users (including self).",
+    category: PermissionCategory.Admin,
+    isPrivileged: true,
+  },
+  [Permission.App_Admin_ManageUsers_ManageAccessTokens]: {
+    description:
+      "Allows revoking and managing user access tokens (including self).",
+    category: PermissionCategory.Admin,
+    isPrivileged: true,
+  },
 };
 
 /**
@@ -122,6 +187,32 @@ export async function deleteUserPermission(
     if (result.rowCount == 0) {
       throw Error("Permission does not exist.");
     }
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * An authenticated query that adds a permissin to a user.
+ *
+ * @throws Error If the database query fails.
+ */
+export async function addUserPermission(
+  _scope: DALScope,
+  userId: string,
+  permission: Permission
+): Promise<void> {
+  try {
+    await db.query(
+      `INSERT INTO user_permissions (
+        user_id,
+        permission_name
+      )
+      VALUES (
+        $1, $2
+      );`,
+      [userId, permission]
+    );
   } catch (error) {
     throw error;
   }

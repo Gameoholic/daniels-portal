@@ -22,19 +22,29 @@ import UserInfoTab from "@/src/components/admin/user-management/user/UserInfoTab
 import UserPermissionsTab from "@/src/components/admin/user-management/user/UserPermissionsTab";
 import UserTokensTab from "@/src/components/admin/user-management/user/UserTokensTab";
 import UserActionsTab from "@/src/components/admin/user-management/user/UserActionsTab";
+import { PermissionData } from "@/src/app/admin/user-management/[userId]/page";
+import { DatabaseQueryResult } from "@/src/db/dal";
 
+/**
+ *
+ * @param availablePermissions The permissions available to add/remove to this user.
+ * @param userPermissions The user's permissions.
+ * @returns
+ */
 export default function UserManagementUser({
   user,
   loading,
   errorString,
   canManagePermissions,
+  userPermissions,
   availablePermissions,
 }: {
   user: AdminActions_GetUser_Result | null;
   loading: boolean;
   errorString: string;
   canManagePermissions: boolean;
-  availablePermissions: AdminActions_GetUser_Result_Permission[];
+  userPermissions: Record<string, PermissionData>;
+  availablePermissions: Record<string, PermissionData>;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [showUnimplemented, setShowUnimplemented] = useState(false);
@@ -120,7 +130,8 @@ export default function UserManagementUser({
 
           <TabsContent value="permissions" className="pt-3">
             <UserPermissionsTab
-              user={user}
+              userId={user.id}
+              userPermissions={userPermissions}
               availablePermissions={availablePermissions}
               canManagePermissions={canManagePermissions}
               onUnimplemented={triggerUnimplemented}

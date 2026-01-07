@@ -36,12 +36,15 @@ import { Separator } from "@/components/ui/separator";
 import { ReactNode, useState } from "react";
 import SensitiveComponent from "../custom/sensitive-component";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
 import {
   revokeSelfTokenAction,
   revokeTokenAction,
   UserSettingsActions_GetUserAccessTokensAction_Result,
   UserSettingsActions_GetUserAction_Result,
 } from "@/src/actions/per-page/user-settings";
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
 export default function Security({
   user,
@@ -56,8 +59,9 @@ export default function Security({
   loading: boolean;
   errorString: string;
 }) {
+  const router = useRouter();
   if (loading) {
-    return <div>todo skeletons here</div>;
+    return <div></div>;
   }
   return (
     <div>
@@ -99,41 +103,52 @@ export default function Security({
         Access tokens: {accessTokens?.length}
       </p>
       {/* Render each access token */}
-      {accessTokens?.map((token, idx) => {
-        const isCurrentlyUsedToken = currentAccessToken == token.token;
-        return (
-          <div
-            key={idx}
-            className={`flex flex-col mt-2 p-2 border rounded-md transition-shadow duration-200 ${
-              isCurrentlyUsedToken
-                ? "border-success-foreground"
-                : "border-muted-foreground"
-            }`}
-          >
-            <TokenRow
-              token={token.token}
-              isCurrentlyUsedToken={isCurrentlyUsedToken}
-            />
-            <p className="font-medium text-1xl text-muted-foreground mt-3">
-              Creation:{" "}
-              {new Date(token.creationTimestamp).toLocaleString("en-il")}
-            </p>
-            <p className="font-medium text-1xl text-muted-foreground">
-              Expiration:{" "}
-              {new Date(token.expirationTimestamp).toLocaleString("en-il")}
-            </p>
-            <div className="flex gap-2 items-center">
-              <p className="font-medium text-1xl text-muted-foreground">
-                Last use:{" "}
-                {token.lastUseTimestamp
-                  ? new Date(token.lastUseTimestamp).toLocaleString("en-il")
-                  : "Never"}
+      {accessTokens
+        ?.sort((a, b) => {
+          const aTime = a.lastUseTimestamp
+            ? new Date(a.lastUseTimestamp).getTime()
+            : 0;
+          const bTime = b.lastUseTimestamp
+            ? new Date(b.lastUseTimestamp).getTime()
+            : 0;
+          return bTime - aTime; // latest first
+        })
+        .map((token, idx) => {
+          const isCurrentlyUsedToken = currentAccessToken == token.token;
+          return (
+            <div
+              key={idx}
+              className={`flex flex-col mt-2 p-2 border rounded-md transition-shadow duration-200 ${
+                isCurrentlyUsedToken
+                  ? "border-success-foreground"
+                  : "border-muted-foreground"
+              }`}
+            >
+              <TokenRow
+                token={token.token}
+                isCurrentlyUsedToken={isCurrentlyUsedToken}
+                router={router}
+              />
+              <p className="font-medium text-1xl text-muted-foreground mt-3">
+                Creation:{" "}
+                {new Date(token.creationTimestamp).toLocaleString("en-il")}
               </p>
-              <AccessTokenLastUseTooltip />
+              <p className="font-medium text-1xl text-muted-foreground">
+                Expiration:{" "}
+                {new Date(token.expirationTimestamp).toLocaleString("en-il")}
+              </p>
+              <div className="flex gap-2 items-center">
+                <p className="font-medium text-1xl text-muted-foreground">
+                  Last use:{" "}
+                  {token.lastUseTimestamp
+                    ? new Date(token.lastUseTimestamp).toLocaleString("en-il")
+                    : "Never"}
+                </p>
+                <AccessTokenLastUseTooltip />
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
     </div>
   );
 }
@@ -141,29 +156,32 @@ export default function Security({
 function TokenRow({
   token,
   isCurrentlyUsedToken,
+  router,
 }: {
   token: string;
   isCurrentlyUsedToken: boolean;
+  router: AppRouterInstance;
 }) {
   const [revoking, setRevoking] = useState(false);
 
   const handleRevoke = async () => {
     setRevoking(true);
-    try {
-      if (isCurrentlyUsedToken) {
-        await revokeSelfTokenAction();
-      } else {
-        await revokeTokenAction(token);
-      }
+
+    let revokeTokenActionResult;
+    if (isCurrentlyUsedToken) {
+      revokeTokenActionResult = await revokeSelfTokenAction();
+    } else {
+      revokeTokenActionResult = await revokeTokenAction(token);
+    }
+    if (revokeTokenActionResult.success) {
       toast("Revoked token", {
         description: "Successfully revoked this token.",
         icon: <CheckCircle2Icon className="text-success-foreground w-5 h-5" />,
         duration: 3000,
       });
-      // can't do refresh here in components i think, only in app/ directory
-    } catch (e) {
-      alert("Failed to revoke token.");
     }
+
+    router.refresh();
     setRevoking(false);
   };
 

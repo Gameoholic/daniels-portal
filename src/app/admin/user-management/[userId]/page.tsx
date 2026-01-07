@@ -2,6 +2,7 @@ import "server-only";
 
 import { Suspense } from "react";
 import {
+  AdminActions_GetUser_Result,
   AdminActions_GetUser_Result_Permission,
   getAllUsersAction,
   getUserAction,
@@ -9,9 +10,15 @@ import {
 import { getUserPermissionsAction } from "@/src/actions/permissions";
 import UserManagementUser from "@/src/components/admin/user-management/user/User";
 import {
+  assertIsPermission,
   Permission,
-  PERMISSIONS_WITH_DESCRIPTIONS,
+  PERMISSION_DATA,
 } from "@/src/db/_internal/per-table/permissions";
+import {
+  databaseQueryError,
+  DatabaseQueryResult,
+  databaseQuerySuccess,
+} from "@/src/db/dal";
 
 export default async function UserPage({
   params,
@@ -28,7 +35,8 @@ export default async function UserPage({
             loading={true}
             errorString=""
             canManagePermissions={false}
-            availablePermissions={[]}
+            availablePermissions={{}}
+            userPermissions={{}}
           />
         }
       >
@@ -36,6 +44,12 @@ export default async function UserPage({
       </Suspense>
     </section>
   );
+}
+
+export interface PermissionData {
+  description: string;
+  category: string;
+  isPrivileged: boolean;
 }
 
 async function UserDataLoader({ userId }: { userId: string }) {
@@ -47,8 +61,7 @@ async function UserDataLoader({ userId }: { userId: string }) {
       getAdminUserPermissionsActionPromise,
     ]);
 
-  // Get the permissions the admin can hand out to users
-  let availablePermissions: AdminActions_GetUser_Result_Permission[] = [];
+  let availablePermissions: Record<string, PermissionData> = {};
   let canManagePermissions = false;
   let canManagePermissionsLite = false;
   if (getAdminUserPermissionsActionResult.success) {
@@ -58,13 +71,24 @@ async function UserDataLoader({ userId }: { userId: string }) {
     );
 
     if (canManagePermissions) {
-      availablePermissions = Object.entries(PERMISSIONS_WITH_DESCRIPTIONS).map(
-        ([permission, description]) => ({
-          permission: permission,
-          description: description,
-        })
+      availablePermissions = Object.fromEntries(
+        Object.entries(PERMISSION_DATA).map(([permissionKey, data]) => [
+          permissionKey,
+          {
+            description: data.description,
+            category: data.category,
+            isPrivileged: data.isPrivileged,
+          },
+        ])
       );
     }
+  }
+
+  let userPermissions: Record<string, PermissionData> = {};
+  if (getUserActionResult.success) {
+    userPermissions = getExpandedPermissionData(
+      getUserActionResult.result.permissions
+    );
   }
 
   return (
@@ -76,6 +100,43 @@ async function UserDataLoader({ userId }: { userId: string }) {
       }
       canManagePermissions={canManagePermissions || canManagePermissionsLite}
       availablePermissions={availablePermissions}
+      userPermissions={userPermissions}
     />
+  );
+}
+
+function getExpandedPermissionData(
+  permissions: AdminActions_GetUser_Result_Permission[]
+): Record<string, PermissionData> {
+  return Object.fromEntries(
+    permissions
+      .map(({ permission, description }) => {
+        const permissionEnum = assertIsPermission(permission);
+        if (!permissionEnum) return null;
+
+        const permissionMeta = PERMISSION_DATA[permissionEnum];
+
+        return [
+          permission,
+          {
+            description: description || permissionMeta?.description || "",
+            category: permissionMeta?.category || "Unknown",
+            isPrivileged: permissionMeta?.isPrivileged || false,
+          },
+        ] as [string, PermissionData];
+      })
+      .filter(Boolean) as [string, PermissionData][] // remove nulls producted by assertIsPermission being null (should never happen in theory)
+  );
+}
+
+async function fetchUserPermissions(): Promise<
+  DatabaseQueryResult<Record<string, PermissionData>>
+> {
+  const getUserActionResult = await getUserAction("");
+  if (!getUserActionResult.success) {
+    return databaseQueryError("Couldn't get permissions.");
+  }
+  return databaseQuerySuccess(
+    getExpandedPermissionData(getUserActionResult.result.permissions)
   );
 }

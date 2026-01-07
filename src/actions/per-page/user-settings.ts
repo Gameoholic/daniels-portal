@@ -4,6 +4,7 @@ import {
   getAccessTokenBelongingToUser,
   getUserAccessTokens,
   updateAccessTokenAutomaticallyRevokedTimestamp,
+  updateAccessTokenManuallyRevokedTimestamp,
 } from "@/src/db/_internal/per-table/access-tokens";
 import {
   getUser,
@@ -27,6 +28,7 @@ export interface UserSettingsActions_GetUserAccessTokensAction_Result {
   expirationTimestamp: Date;
   lastUseTimestamp: Date | null;
 }
+
 /**
  * @returns Only valid (non-expired and non-revoked) access tokens
  */
@@ -202,7 +204,7 @@ export async function revokeTokenAction(
   const updateAccessTokenManuallyRevokedTimestampQuery =
     await executeDatabaseQuery(
       await getAccessTokenFromBrowser(),
-      updateAccessTokenAutomaticallyRevokedTimestamp,
+      updateAccessTokenManuallyRevokedTimestamp,
       [token]
     );
 
