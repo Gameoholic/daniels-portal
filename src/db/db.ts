@@ -107,9 +107,14 @@ const initDbTables = async (): Promise<void> => {
       CREATE TABLE IF NOT EXISTS account_creation_codes (
         code VARCHAR PRIMARY KEY,
         email VARCHAR NOT NULL UNIQUE,
+        creation_timestamp TIMESTAMP NOT NULL,
+        creator_user_id VARCHAR NOT NULL,
         account_default_token_expiry_seconds INTEGER NOT NULL,
+        permission_ids VARCHAR[] NOT NULL,
         expiration_timestamp TIMESTAMP NOT NULL,
-        used_timestamp DATE,
+        revoked_timestamp TIMESTAMP,
+        revoker_user_id VARCHAR,
+        used_timestamp TIMESTAMP,
         deletion_timestamp TIMESTAMP
       );
     `;
