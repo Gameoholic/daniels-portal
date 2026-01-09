@@ -7,8 +7,18 @@ import {
   updateAccessTokenManuallyRevokedTimestampByAlias,
 } from "@/src/db/_internal/per-table/access-tokens";
 import {
+  addPermissionToAccountCreationCode,
+  getAccountCreationCode,
+  getAllAccountCreationCodes,
+  isAccountCreationCodeValid,
+  removePermissionFromAccountCreationCode,
+  revokeAccountCreationCode,
+  ServerAccountCreationCode,
+} from "@/src/db/_internal/per-table/account-creation-codes";
+import {
   addUserPermission,
   assertIsPermission as assertIsKnownPermission,
+  assertIsPermission,
   deleteUserPermission,
   getUserPermissions,
   Permission,
@@ -30,7 +40,6 @@ import {
   GET_USER_ID_FROM_ACCESS_TOKEN,
   getAccessTokenFromBrowser,
 } from "@/src/db/dal";
-import { forbidden } from "next/navigation";
 
 export interface AdminActions_GetUsers_Result_Permission {
   name: string;
@@ -326,7 +335,7 @@ export async function addUserPermissionAction(
 /**
  * 'Manually' revokes a token using its alias.
  */
-export async function revokeTokenAction(
+export async function revokeAccessTokenAction(
   tokenAlias: string
 ): Promise<DatabaseQueryResult<void>> {
   if (
@@ -349,6 +358,264 @@ export async function revokeTokenAction(
 
   if (!updateAccessTokenManuallyRevokedTimestampQuery.success) {
     return { success: false, errorString: "Couldn't revoke access token." };
+  }
+
+  return {
+    success: true,
+    result: undefined, // void
+  };
+}
+
+export interface AdminActions_GetAccountCreationCodes_Result_Permission {
+  name: string;
+  description: string;
+  isPrivileged: boolean;
+}
+
+export interface AdminActions_GetAccountCreationCodes_Result {
+  code: string;
+  email: string;
+  creationTimestamp: Date;
+  creatorUserId: string;
+  creatorUsername: string;
+  expirationTimestamp: Date;
+  accountDefaultTokenExpirySeconds: number;
+  permissions: AdminActions_GetAccountCreationCodes_Result_Permission[];
+  onCreatedEmailUser: boolean;
+  onCreatedEmailCreator: boolean;
+  onUsedEmailUser: boolean;
+  onUsedEmailCreator: boolean;
+}
+
+/**
+ * Returns all account creation codes.
+ */
+export async function getAllAccountCreationCodesAction(): Promise<
+  DatabaseQueryResult<AdminActions_GetAccountCreationCodes_Result[]>
+> {
+  if (
+    !(
+      await checkForPermissions(
+        Permission.UseApp_Admin,
+        Permission.App_Admin_ManageAccountCreationCodes
+      )
+    ).success
+  ) {
+    return databaseQueryError("No permission.");
+  }
+  const getAllAccountCreationCodesQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    getAllAccountCreationCodes,
+    []
+  );
+  if (!getAllAccountCreationCodesQuery.success) {
+    return getAllAccountCreationCodesQuery;
+  }
+  const allCodes: ServerAccountCreationCode[] =
+    getAllAccountCreationCodesQuery.result;
+
+  // Filter out invalid codes
+  const onlyValidCodes = allCodes.filter(
+    (x) => isAccountCreationCodeValid(x).valid
+  );
+
+  // Minimize data passed to client to only necessary data
+  const minimizedDataAccountCreationCodes: (AdminActions_GetAccountCreationCodes_Result | null)[] =
+    await Promise.all(
+      onlyValidCodes.map(async (code) => {
+        const permissions: AdminActions_GetAccountCreationCodes_Result_Permission[] =
+          code.permission_ids
+            .map((perm) => {
+              const permission = assertIsPermission(perm);
+              if (!permission) {
+                return null;
+              }
+              return {
+                name: perm,
+                description: PERMISSION_DATA[permission].description,
+                isPrivileged: PERMISSION_DATA[permission].isPrivileged,
+              };
+            })
+            .filter((x) => x !== null);
+
+        const getUserQuery = await executeDatabaseQuery(
+          await getAccessTokenFromBrowser(),
+          getUser,
+          [code.creator_user_id]
+        );
+        if (!getUserQuery.success || !getUserQuery.result) {
+          return null;
+        }
+        return {
+          code: code.code,
+          email: code.email,
+          creationTimestamp: code.creation_timestamp,
+          creatorUserId: getUserQuery.result.id,
+          creatorUsername: getUserQuery.result.username,
+          expirationTimestamp: code.expiration_timestamp,
+          accountDefaultTokenExpirySeconds:
+            code.account_default_token_expiry_seconds,
+          permissions: permissions,
+          onCreatedEmailUser: code.on_created_email_user,
+          onCreatedEmailCreator: code.on_created_email_creator,
+          onUsedEmailUser: code.on_used_email_user,
+          onUsedEmailCreator: code.on_used_email_creator,
+        };
+      })
+    );
+
+  if (minimizedDataAccountCreationCodes.some((x) => x == null)) {
+    return databaseQueryError("Couldn't get one or more users from code.");
+  }
+
+  return databaseQuerySuccess(
+    minimizedDataAccountCreationCodes as AdminActions_GetAccountCreationCodes_Result[]
+  ); // we check earlier that none of it is null, this is just so compiler doesn't shout
+}
+
+/**
+ * Revokes an account creation code.
+ */
+export async function revokeAccountCreationCodeAction(
+  code: string
+): Promise<DatabaseQueryResult<void>> {
+  if (
+    !(
+      await checkForPermissions(
+        Permission.UseApp_Admin,
+        Permission.App_Admin_ManageAccountCreationCodes
+      )
+    ).success
+  ) {
+    return databaseQueryError("No permission.");
+  }
+
+  const revokeAccountCreationCodeQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    revokeAccountCreationCode,
+    [code, GET_USER_ID_FROM_ACCESS_TOKEN]
+  );
+
+  if (!revokeAccountCreationCodeQuery.success) {
+    return {
+      success: false,
+      errorString: "Couldn't revoke account creation code.",
+    };
+  }
+
+  return {
+    success: true,
+    result: undefined, // void
+  };
+}
+
+/**
+ * Removes a permission from an account creation code.
+ */
+export async function removePermissionFromAccountCreationCodeAction(
+  code: string,
+  permissionToRemove: string
+): Promise<DatabaseQueryResult<void>> {
+  if (
+    !(
+      await checkForPermissions(
+        Permission.UseApp_Admin,
+        Permission.App_Admin_ManageAccountCreationCodes
+      )
+    ).success
+  ) {
+    return databaseQueryError("No permission.");
+  }
+
+  // Validate permission is valid
+  if (!assertIsKnownPermission(permissionToRemove)) {
+    return databaseQueryError("Permission doesn't exist.");
+  }
+
+  // Validate account creation code is valid
+  const getAccountCreationCodeQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    getAccountCreationCode,
+    [code]
+  );
+  if (!getAccountCreationCodeQuery.success) {
+    return databaseQueryError("Couldn't remove permission.");
+  }
+  const accountCreationCode = getAccountCreationCodeQuery.result;
+  if (!isAccountCreationCodeValid(accountCreationCode)) {
+    return databaseQueryError("Couldn't remove permission.");
+  }
+  // Validate permission exists on code
+  if (!accountCreationCode.permission_ids.includes(permissionToRemove)) {
+    return databaseQueryError("Permission doesn't exist on code.");
+  }
+
+  // Finally, remove the permission
+  const removePermissionFromAccountCreationCodeQuery =
+    await executeDatabaseQuery(
+      await getAccessTokenFromBrowser(),
+      removePermissionFromAccountCreationCode,
+      [code, permissionToRemove]
+    );
+  if (!removePermissionFromAccountCreationCodeQuery.success) {
+    return { success: false, errorString: "Couldn't remove permission." };
+  }
+
+  return {
+    success: true,
+    result: undefined, // void
+  };
+}
+
+/**
+ * Adds a permission to an account creation code.
+ */
+export async function addPermissionToAccountCreationCodeAction(
+  code: string,
+  permissionToAdd: string
+): Promise<DatabaseQueryResult<void>> {
+  if (
+    !(
+      await checkForPermissions(
+        Permission.UseApp_Admin,
+        Permission.App_Admin_ManageAccountCreationCodes
+      )
+    ).success
+  ) {
+    return databaseQueryError("No permission.");
+  }
+
+  // Validate permission is valid
+  if (!assertIsKnownPermission(permissionToAdd)) {
+    return databaseQueryError("Permission doesn't exist.");
+  }
+
+  // Validate account creation code is valid
+  const getAccountCreationCodeQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    getAccountCreationCode,
+    [code]
+  );
+  if (!getAccountCreationCodeQuery.success) {
+    return databaseQueryError("Couldn't add permission.");
+  }
+  const accountCreationCode = getAccountCreationCodeQuery.result;
+  if (!isAccountCreationCodeValid(accountCreationCode)) {
+    return databaseQueryError("Couldn't add permission.");
+  }
+  // Validate permission doesn't exist on code
+  if (accountCreationCode.permission_ids.includes(permissionToAdd)) {
+    return databaseQueryError("Permission already exists on code.");
+  }
+
+  // Finally, add the permission
+  const addPermissionToAccountCreationCodeQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    addPermissionToAccountCreationCode,
+    [code, permissionToAdd]
+  );
+  if (!addPermissionToAccountCreationCodeQuery.success) {
+    return { success: false, errorString: "Couldn't add permission." };
   }
 
   return {

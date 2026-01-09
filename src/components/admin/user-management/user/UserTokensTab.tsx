@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   AdminActions_GetUser_Result,
   AdminActions_GetUser_Result_AccessToken,
-  revokeTokenAction,
+  revokeAccessTokenAction,
 } from "@/src/actions/per-page/admin";
 import { useRouter } from "next/navigation";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
@@ -137,7 +137,7 @@ function TokenRow({
   const handleRevoke = async () => {
     setRevoking(true);
 
-    const revokeTokenActionResult = await revokeTokenAction(tokenAlias);
+    const revokeTokenActionResult = await revokeAccessTokenAction(tokenAlias);
     if (revokeTokenActionResult.success) {
       toast("Revoked token", {
         description: "Successfully revoked this token.",

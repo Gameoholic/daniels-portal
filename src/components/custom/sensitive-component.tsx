@@ -10,11 +10,15 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 export default function SensitiveComponent({
   children,
   blurAmount = 8,
+  iconSize = 5,
+  blurredTextSize = "text-xs",
   secureLength = null,
   transitionMS = 200,
 }: {
   children: ReactNode;
   blurAmount?: number;
+  iconSize?: number;
+  blurredTextSize?: string;
   secureLength?: number | null;
   transitionMS?: number;
 }) {
@@ -69,15 +73,21 @@ export default function SensitiveComponent({
       {/* Eye toggle */}
       <button onClick={handleToggle} className="p-1 rounded hover:bg-accent">
         {visible ? (
-          <EyeOff className="h-5 w-5 text-muted-foreground" />
+          <EyeOff
+            className={`h-${iconSize} w-${iconSize} text-muted-foreground`}
+          />
         ) : (
-          <Eye className="h-5 w-5 text-muted-foreground" />
+          <Eye
+            className={`h-${iconSize} w-${iconSize} text-muted-foreground`}
+          />
         )}
       </button>
 
       {/* Content */}
       <span
-        className="transition-all duration-200"
+        className={`transition-[filter,opacity,color,background-color,transform] duration-200 ${
+          showGarbage && garbage ? blurredTextSize : ""
+        }`}
         style={{
           filter: visible ? "none" : `blur(${blurAmount}px)`,
           userSelect: visible ? "auto" : "none",

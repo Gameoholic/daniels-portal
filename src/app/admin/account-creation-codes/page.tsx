@@ -2,10 +2,18 @@ import "server-only";
 
 import { Suspense } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { getAllUsersAction } from "@/src/actions/per-page/admin";
+import {
+  getAllAccountCreationCodesAction,
+  getAllUsersAction,
+} from "@/src/actions/per-page/admin";
 import { getUserPermissionsAction } from "@/src/actions/permissions";
 import UserManagement from "@/src/components/admin/user-management/UserManagement";
-import { Permission } from "@/src/db/_internal/per-table/permissions";
+import {
+  Permission,
+  PERMISSION_DATA,
+  PermissionData,
+} from "@/src/db/_internal/per-table/permissions";
+import AccountCreationCodes from "@/src/components/admin/account-creation-codes/AccountCreationCodes";
 
 export default function UserSettings() {
   return (
@@ -20,29 +28,35 @@ export default function UserSettings() {
 }
 
 async function UserDataLoader() {
-  const getAllUsersActionPromise = getAllUsersAction();
-  const getUserPermissionsActionPromise = getUserPermissionsAction();
-  const [getAllUsersActionResult, getAllUserPermissionsActionResult] =
-    await Promise.all([
-      getAllUsersActionPromise,
-      getUserPermissionsActionPromise,
-    ]);
+  const getAllAccountCreationCodesActionResult =
+    await getAllAccountCreationCodesAction();
 
-  if (!getAllUserPermissionsActionResult.success) {
+  if (!getAllAccountCreationCodesActionResult.success) {
     return null; // todo, this is a hacky quick fix
   }
 
+  let availablePermissions: Record<string, PermissionData> = {};
+  availablePermissions = Object.fromEntries(
+    Object.entries(PERMISSION_DATA).map(([permissionKey, data]) => [
+      permissionKey,
+      {
+        description: data.description,
+        category: data.category,
+        isPrivileged: data.isPrivileged,
+      },
+    ])
+  );
+
   return (
-    <UserManagement
-      users={
-        getAllUsersActionResult.success ? getAllUsersActionResult.result : null
+    <AccountCreationCodes
+      accountCreationCodes={
+        getAllAccountCreationCodesActionResult.success
+          ? getAllAccountCreationCodesActionResult.result
+          : null
       }
-      loading={false}
-      errorString={
-        getAllUsersActionResult.success
-          ? ""
-          : getAllUsersActionResult.errorString
-      }
+      availablePermissions={availablePermissions}
+      propLoading={false}
+      errorString={""}
     />
   );
 }

@@ -115,7 +115,12 @@ const initDbTables = async (): Promise<void> => {
         revoked_timestamp TIMESTAMP,
         revoker_user_id VARCHAR,
         used_timestamp TIMESTAMP,
-        deletion_timestamp TIMESTAMP
+        used_on_user_id VARCHAR,
+        deletion_timestamp TIMESTAMP,
+        on_created_email_user BOOLEAN NOT NULL,
+        on_created_email_creator BOOLEAN NOT NULL,
+        on_used_email_user BOOLEAN NOT NULL,
+        on_used_email_creator BOOLEAN NOT NULL
       );
     `;
 
