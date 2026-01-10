@@ -167,7 +167,7 @@ export function DurationPicker({
           {Object.values(ExpiryUnit)
             .filter((x) => !excludedUnits.includes(x))
             .map((x) => (
-              <SelectItem key={x} value={x}>
+              <SelectItem key={x} value={x} className={className}>
                 {value == 1 ? x : x + "s"}
               </SelectItem>
             ))}
