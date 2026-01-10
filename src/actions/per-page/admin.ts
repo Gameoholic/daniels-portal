@@ -8,6 +8,7 @@ import {
 } from "@/src/db/_internal/per-table/access-tokens";
 import {
   addPermissionToAccountCreationCode,
+  createAccountCreationCode,
   getAccountCreationCode,
   getAllAccountCreationCodes,
   isAccountCreationCodeValid,
@@ -616,6 +617,70 @@ export async function addPermissionToAccountCreationCodeAction(
   );
   if (!addPermissionToAccountCreationCodeQuery.success) {
     return { success: false, errorString: "Couldn't add permission." };
+  }
+
+  return {
+    success: true,
+    result: undefined, // void
+  };
+}
+
+export async function addAccountCreationCode(
+  code: string,
+  email: string,
+  accountDefaultTokenExpirySeconds: number,
+  permissionIds: string[],
+  expirationTimestamp: Date,
+  onCreatedEmailUser: boolean,
+  onCreatedEmailCreator: boolean,
+  onUsedEmailUser: boolean,
+  onUsedEmailCreator: boolean
+) {
+  if (
+    !(
+      await checkForPermissions(
+        Permission.UseApp_Admin,
+        Permission.App_Admin_ManageAccountCreationCodes
+      )
+    ).success
+  ) {
+    return databaseQueryError("No permission.");
+  }
+
+  // Validate account creation code is valid
+  // TODO: validate email is real here
+  if (email === "invalid") {
+    return databaseQueryError("Invalid email argument.");
+  }
+  if (code.length > 6 || !/^[A-Z0-9]+$/.test(code)) {
+    return databaseQueryError("Invalid code argument.");
+  }
+  // todo: check upper limit too. Must set it somewhere in project settings, and have it be the same in user settings.
+  if (accountDefaultTokenExpirySeconds <= 0) {
+    return databaseQueryError("Invalid default token expiry argument.");
+  }
+  // todo: validate expiration seconds.
+  if (expirationTimestamp < new Date()) {
+    return databaseQueryError("Invalid expiration date argument.");
+  }
+  const createAccountCreationCodeQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    createAccountCreationCode,
+    [
+      code,
+      email,
+      GET_USER_ID_FROM_ACCESS_TOKEN,
+      accountDefaultTokenExpirySeconds,
+      permissionIds,
+      expirationTimestamp,
+      onCreatedEmailUser,
+      onCreatedEmailCreator,
+      onUsedEmailUser,
+      onUsedEmailCreator,
+    ]
+  );
+  if (!createAccountCreationCodeQuery.success) {
+    return databaseQueryError("Couldn't create code.");
   }
 
   return {

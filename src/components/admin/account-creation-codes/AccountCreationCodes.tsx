@@ -73,17 +73,17 @@ export default function AccountCreationCodes({
 
       {/* Search */}
       <div className="flex justify-between mb-6 gap-20">
-          <input
-            type="text"
-            placeholder="Search by code or email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full p-3 rounded-lg border border-border
+        <input
+          type="text"
+          placeholder="Search by code or email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full p-3 rounded-lg border border-border
                       focus:outline-none focus:ring-2 focus:ring-accent
                       focus:border-accent transition-colors"
-          />
+        />
 
-        <IssueCodeDialog availablePermissions={availablePermissions} onSubmit={async () => {}}/>
+        <IssueCodeDialog availablePermissions={availablePermissions} />
       </div>
 
       {/* Grid */}
