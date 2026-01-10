@@ -7,7 +7,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CircleQuestionMark } from "lucide-react";
-import SensitiveComponent from "@/src/components/custom/sensitive-component";
+import SensitiveComponent from "@/src/components/global/SensitiveComponent";
 
 function formatDateTime(date: Date | null) {
   if (!date) return "—";

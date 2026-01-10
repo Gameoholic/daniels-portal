@@ -131,31 +131,6 @@ export default function UserManagement({
                     <CardTitle className="text-lg">{user.username}</CardTitle>
                     <CardDescription>{user.email}</CardDescription>
                   </div>
-                  {/* Icons + tooltips
-                  <div className="flex gap-2">
-                    {user.hasPrivilegedAdminPermissions && (
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <ShieldAlert className="h-5 w-5 text-destructive cursor-pointer" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          This user has privileged admin permissions.
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-
-                    {user.canIssueAccountCreationCodes && (
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <UserRoundPlus className="h-5 w-5 text-destructive cursor-pointer" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          This user can enter the admin panel and issue account
-                          creation codes.
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div> */}
                 </CardHeader>
 
                 <CardContent className="space-y-1">

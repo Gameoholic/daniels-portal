@@ -44,7 +44,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ReactNode, useState } from "react";
-import SensitiveComponent from "../custom/sensitive-component";
+import SensitiveComponent from "../global/SensitiveComponent";
 import { toast } from "sonner";
 import { Router, useRouter } from "next/router";
 import {

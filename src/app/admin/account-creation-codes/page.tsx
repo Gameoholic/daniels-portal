@@ -55,7 +55,7 @@ async function UserDataLoader() {
           : null
       }
       availablePermissions={availablePermissions}
-      propLoading={false}
+      loading={false}
       errorString={""}
     />
   );
