@@ -1,36 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Check,
-  Shield,
-  Mail,
-  User,
-  Clock,
-  Trash2,
-  ShieldAlert,
-  Terminal,
-  UserStar,
-  Trash,
-  Plus,
-  AlertCircleIcon,
-  CheckCircle2Icon,
-  CircleQuestionMark,
-} from "lucide-react";
-
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from "@/components/ui/command";
 
 import {
   addPermissionToAccountCreationCodeAction,
@@ -57,6 +27,8 @@ import {
 import { displayDateInFullFormat } from "@/src/util/date";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CodePanel } from "@/src/components/admin/account-creation-codes/CodeCard";
+import { Plus, UserPlus } from "lucide-react";
+import { IssueCodeDialog } from "./IssueCodeDialog";
 
 export default function AccountCreationCodes({
   accountCreationCodes,
@@ -100,16 +72,18 @@ export default function AccountCreationCodes({
       <p className="font-semibold text-2xl mb-2">Account Creation Codes</p>
 
       {/* Search */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search by code or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full md:w-1/2 p-3 rounded-lg border border-border
-                     focus:outline-none focus:ring-2 focus:ring-accent
-                     focus:border-accent transition-colors"
-        />
+      <div className="flex justify-between mb-6 gap-20">
+          <input
+            type="text"
+            placeholder="Search by code or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full p-3 rounded-lg border border-border
+                      focus:outline-none focus:ring-2 focus:ring-accent
+                      focus:border-accent transition-colors"
+          />
+
+        <IssueCodeDialog availablePermissions={availablePermissions} onSubmit={async () => {}}/>
       </div>
 
       {/* Grid */}
