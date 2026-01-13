@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import db from "./db";
 import {
   AccessTokenInvalidReason,
-  getAccessToken,
+  tokenless_getAccessToken,
   isAccessTokenValid,
   tokenless_getUserPermissions,
 } from "./_internal/tokenless-queries";
@@ -245,7 +245,7 @@ export async function verifyAccessToken(
   // THIS WILL VERIFY THE TOKEN IS ACTUALLY VALID and not expired/revoked
   // We use the function directly and not through executeDatabaseQuery because this function is called there!
   const getAccessTokenRequest = await tokenless_executeDatabaseQuery(
-    getAccessToken,
+    tokenless_getAccessToken,
     [token]
   );
   if (!getAccessTokenRequest.success) {

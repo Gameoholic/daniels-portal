@@ -11,7 +11,7 @@ import crypto from "crypto";
 import { invalidateTokensIfOverMaxAmountAction } from "./per-page/user-settings";
 
 import {
-  addAccessToken,
+  tokenless_addAccessToken,
   isAccessTokenValid,
   tokenless_getUserAccessTokens,
   tokenless_getUserByUsername,
@@ -78,7 +78,7 @@ export async function loginAction(
     Date.now() + 1000 * user.default_token_expiry_seconds
   );
   const createAccessTokenRequest = await tokenless_executeDatabaseQuery(
-    addAccessToken,
+    tokenless_addAccessToken,
     [token, alias, user.id, expirationTimestamp]
   );
   if (!createAccessTokenRequest.success) {

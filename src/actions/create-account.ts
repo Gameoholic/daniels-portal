@@ -3,8 +3,10 @@
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 import {
-  addUser,
+  tokenless_addUser,
+  tokenless_addUserPermission,
   tokenless_getAccountCreationCode,
+  tokenless_getUser,
   tokenless_getUserByUsername,
   tokenless_setAccountCreationCodeUsed,
 } from "../db/_internal/tokenless-queries";
@@ -14,6 +16,9 @@ import {
   DatabaseQueryResult,
   tokenless_executeDatabaseQuery,
 } from "../db/dal";
+import { Resend } from "resend";
+import { AccountCreatedSuccessfullyEmail } from "@/src/components/email/account-created-email";
+import { AdminAccountCreationNotificationEmail } from "@/src/components/email/admin-account-creation-notification-email";
 
 export async function createAccountAction(
   username: string,
@@ -32,11 +37,9 @@ export async function createAccountAction(
   }
 
   const accountCreationCode = getAccountCreationCodeRequest.result;
-
-  if (accountCreationCode.deletion_timestamp) {
+  if (accountCreationCode.revoked_timestamp) {
     return databaseQueryError("Invalid account creation code.");
   }
-
   if (accountCreationCode.used_timestamp != null) {
     return databaseQueryError(
       "Account creation code was already used to create an account."
@@ -73,10 +76,12 @@ export async function createAccountAction(
   // We deliberately don't check if user with this email already exists. This shouldn't happen because when we issue account creation codes we check for this
   // and if it for some reason it does happen we don't want to expose which emails exist on the DB to the client, so it'll just fall on the 500 status error below.
 
+  const userId = uuidv4();
   // Invalidate account creation code
   const setAccountCreationCodeUsedRequest =
     await tokenless_executeDatabaseQuery(tokenless_setAccountCreationCodeUsed, [
       accountCreationCode.code,
+      userId,
     ]);
   if (!setAccountCreationCodeUsedRequest.success) {
     return databaseQueryError(
@@ -84,7 +89,6 @@ export async function createAccountAction(
     );
   }
 
-  const userId = uuidv4();
   const defaultTokenExpirySeconds =
     accountCreationCode.account_default_token_expiry_seconds;
   // Gen salt & hash password
@@ -92,19 +96,90 @@ export async function createAccountAction(
   const hashedPassword = await bcrypt.hash(plaintextPassword, salt);
 
   // Create account
-  const createUserRequest = await tokenless_executeDatabaseQuery(addUser, [
-    userId,
-    username,
-    email,
-    hashedPassword,
-    defaultTokenExpirySeconds,
-    null,
-  ]);
+  const createUserRequest = await tokenless_executeDatabaseQuery(
+    tokenless_addUser,
+    [userId, username, email, hashedPassword, defaultTokenExpirySeconds, null]
+  );
+
+  // Add permissions
+  // todo don't make a db call per permission individually
+  const addPermissionsQuery = await Promise.all(
+    accountCreationCode.permission_ids.map(async (x) => {
+      console.log("attmepting to add permission", x);
+      const addUserPermissionQuery = await tokenless_executeDatabaseQuery(
+        tokenless_addUserPermission,
+        [userId, x]
+      );
+      console.log("added. sucess: ", addUserPermissionQuery.success);
+      return addUserPermissionQuery;
+    })
+  );
+  if (addPermissionsQuery.some((x) => !x.success)) {
+    return databaseQueryError(
+      "Could not create account due to an internal error."
+    );
+  }
 
   if (!createUserRequest.success) {
     return databaseQueryError(
       "Could not create account due to an internal error."
     );
+  }
+
+  // ------- EMAIL NOTIFICATIONS: ----
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const { error: userEmailError } = await resend.emails.send({
+    from: `${process.env.SITE_NAME} <${process.env.EMAIL_SENDER_NAME}@${process.env.DOMAIN}>`,
+    to: email,
+    subject: `Welcome to ${process.env.DOMAIN}`,
+    react: AccountCreatedSuccessfullyEmail({
+      userId: userId,
+      username: username,
+    }),
+  });
+  if (userEmailError) {
+    // todo: this is not ideal.
+    return databaseQueryError(
+      "Created account but couldn't send welcome email."
+    );
+  }
+
+  const getAccountCreationCodeCreatorQuery =
+    await tokenless_executeDatabaseQuery(tokenless_getUser, [
+      accountCreationCode.creator_user_id,
+    ]);
+  if (
+    !getAccountCreationCodeCreatorQuery.success ||
+    getAccountCreationCodeCreatorQuery.result === null
+  ) {
+    // todo: this is not ideal.
+    return databaseQueryError(
+      "Created account but couldn't send email to creator of account creation code."
+    );
+  }
+  const accountCreationCodeCreatorEmail =
+    getAccountCreationCodeCreatorQuery.result.email;
+  if (accountCreationCode.on_used_email_creator) {
+    const { error: adminEmailError } = await resend.emails.send({
+      from: `${process.env.SITE_NAME} <${process.env.EMAIL_SENDER_NAME}@${process.env.DOMAIN}>`,
+      to: accountCreationCodeCreatorEmail,
+      subject: `Your code was used to create an account`,
+      react: AdminAccountCreationNotificationEmail({
+        codeId: accountCreationCode.id,
+        codeTitle: accountCreationCode.title,
+        email: email,
+        userId: userId,
+        username: username,
+        permissions: accountCreationCode.permission_ids,
+      }),
+    });
+    if (adminEmailError) {
+      // todo: this is not ideal.
+      return databaseQueryError(
+        "Created account but couldn't send email to creator of account creation code."
+      );
+    }
   }
 
   return databaseQuerySuccess();

@@ -29,12 +29,12 @@ import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.share
 import { PermissionData } from "@/src/db/_internal/per-table/permissions";
 
 export function AddPermissionPopver({
-  accountCreationCode,
+  accountCreationCodeId,
   userCurrentPermissions,
   availablePermissions,
   router,
 }: {
-  accountCreationCode: string;
+  accountCreationCodeId: string;
   userCurrentPermissions: string[];
   availablePermissions: Record<string, PermissionData>;
   router: AppRouterInstance;
@@ -74,7 +74,7 @@ export function AddPermissionPopver({
     setLoading(true);
     const addPermissionToAccountCreationCodeActionResult =
       await addPermissionToAccountCreationCodeAction(
-        accountCreationCode,
+        accountCreationCodeId,
         permissionToAdd
       );
     if (!addPermissionToAccountCreationCodeActionResult.success) {

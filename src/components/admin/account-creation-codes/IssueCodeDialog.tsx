@@ -12,7 +12,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Clock, Dices, Plus, Shield, ShieldAlert, Trash } from "lucide-react";
+import {
+  AlertCircleIcon,
+  CheckCircle2Icon,
+  Clock,
+  Dices,
+  Plus,
+  Shield,
+  ShieldAlert,
+  Trash,
+} from "lucide-react";
 
 import { PermissionData } from "@/src/db/_internal/per-table/permissions";
 import {
@@ -22,26 +31,64 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DurationPicker,
-  ExpiryUnit,
-} from "@/src/components/global/DurationPicker";
+import { DurationPicker } from "@/src/components/global/DurationPicker";
 import { SeparatorWithHeader } from "@/src/components/global/SeparatorWithHeader";
 import { AddPermissionPopver } from "@/src/components/global/AddPermissionPopover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { addAccountCreationCodeAction } from "@/src/actions/per-page/admin";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { ExpiryUnit } from "@/src/util/duration";
 
 export function IssueCodeDialog({
   availablePermissions,
 }: {
   availablePermissions: Record<string, PermissionData>;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Parameters:
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
+  const [title, setTitle] = useState("");
   const [expirySeconds, setExpirySeconds] = useState(3600 * 24 * 3); // 3 days
+  const [emailMeWhenUsed, setEmailMeWhenUsed] = useState(false);
   const [defaultTokenExpirySeconds, setDefaultTokenExpirySeconds] = useState(
     3600 * 24 * 7
   ); // 1 week
   const [permissions, setPermissions] = useState<string[]>([]);
+
+  async function createCode() {
+    if (loading) return;
+    setLoading(true);
+
+    const addAccountCreationCodeActionResult =
+      await addAccountCreationCodeAction(
+        title,
+        email,
+        defaultTokenExpirySeconds,
+        permissions,
+        new Date(Date.now() + expirySeconds * 1000),
+        emailMeWhenUsed
+      );
+
+    if (!addAccountCreationCodeActionResult.success) {
+      toast("Couldn't issue code.", {
+        description: addAccountCreationCodeActionResult.errorString,
+        icon: <AlertCircleIcon className="w-5 h-5 text-error-foreground" />,
+      });
+    } else {
+      toast("Successfully issued the code.", {
+        icon: <CheckCircle2Icon className="w-5 h-5 text-success-foreground" />,
+      });
+      setOpen(false);
+      router.refresh();
+    }
+
+    setLoading(false);
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -60,10 +107,14 @@ export function IssueCodeDialog({
         <p>Allow someone to create a single account on the website.</p>
 
         <Email value={email} setEmail={setEmail} />
-        <Code value={code} setCode={setCode} />
+        <Title title={title} setTitle={setTitle} />
         <Expiry
           expirySeconds={expirySeconds}
           setExpirySeconds={setExpirySeconds}
+        />
+        <EmailMeWhenUsed
+          value={emailMeWhenUsed}
+          setEmailMeWhenUsed={setEmailMeWhenUsed}
         />
         <Permissions
           // todo this is quite bad and a lazy tempfix.
@@ -88,7 +139,16 @@ export function IssueCodeDialog({
         />
 
         <DialogFooter>
-          <Button>Issue Code</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="outline"
+            disabled={loading}
+            onClick={() => createCode()}
+          >
+            Issue Code
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -115,40 +175,25 @@ function Email({
   );
 }
 
-function Code({
-  value,
-  setCode,
+function Title({
+  title,
+  setTitle,
 }: {
-  value: string;
-  setCode: (v: string) => void;
+  title: string;
+  setTitle: (v: string) => void;
 }) {
-  function generateRandomCode() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let result = "";
-    for (let i = 0; i < 6; i++) {
-      result += chars[Math.floor(Math.random() * chars.length)];
-    }
-    setCode(result);
-  }
-
-  function onCodeChange(e: ChangeEvent<HTMLInputElement>) {
-    const newCode = e.target.value.toUpperCase();
-    if (
-      newCode.length === 0 ||
-      (/^[A-Z0-9]+$/.test(newCode) && newCode.length <= 6)
-    ) {
-      setCode(newCode);
+  function onTitleChange(e: ChangeEvent<HTMLInputElement>) {
+    const newTitle = e.target.value;
+    if (newTitle.length < 20) {
+      setTitle(e.target.value);
     }
   }
 
   return (
-    <div className="flex flex-col gap-2 text-sm max-w-40">
-      <span>Code</span>
+    <div className="flex flex-col gap-2 text-sm max-w-45">
+      <span>Title (optional)</span>
       <div className="flex items-center gap-2">
-        <Input type="text" value={value} onChange={onCodeChange} />
-        <Button variant="ghost" onClick={generateRandomCode}>
-          <Dices className="h-5 w-5" />
-        </Button>
+        <Input type="text" value={title} onChange={onTitleChange} />
       </div>
     </div>
   );
@@ -165,14 +210,38 @@ function Expiry({
     setExpirySeconds(seconds);
   }
   return (
-    <DurationPicker
-      className="text-sm"
-      label="Expires in:"
-      initialDurationSeconds={expirySeconds}
-      maxDurationValue={99}
-      onDurationChange={onExpiryChange}
-      excludedUnits={[ExpiryUnit.SECONDS, ExpiryUnit.YEARS, ExpiryUnit.MONTHS]}
-    />
+    <div className="flex flex-col gap-2 text-sm max-w-45">
+      <span>Expires in</span>
+      <DurationPicker
+        className="text-sm"
+        initialDurationSeconds={expirySeconds}
+        maxDurationValue={99}
+        onDurationChange={onExpiryChange}
+        excludedUnits={[
+          ExpiryUnit.SECONDS,
+          ExpiryUnit.YEARS,
+          ExpiryUnit.MONTHS,
+        ]}
+      />
+    </div>
+  );
+}
+
+function EmailMeWhenUsed({
+  value,
+  setEmailMeWhenUsed,
+}: {
+  value: boolean;
+  setEmailMeWhenUsed: (b: boolean) => void;
+}) {
+  return (
+    <div className="flex gap-2 text-sm items-center">
+      <span>Email me when account is created?</span>
+      <Checkbox
+        checked={value}
+        onCheckedChange={(checked) => setEmailMeWhenUsed(!!checked)}
+      />
+    </div>
   );
 }
 
@@ -221,7 +290,7 @@ function Permissions({
       />
       <div className="flex flex-col gap-1">
         {Object.keys(currentPermissions).length === 0 ? (
-          <p className="text-sm text-muted-foreground">None</p>
+          <span className="text-sm text-muted-foreground">None</span>
         ) : (
           [...Object.keys(currentPermissions)]
             // Show non-privileged permissions first, then sort alphabetically
@@ -283,12 +352,18 @@ function DefaultTokenExpiry({
   setTokenExpirySeconds: (seconds: number) => void;
 }) {
   return (
-    <DurationPicker
-      className="text-sm"
-      label="Default token expiry:"
-      initialDurationSeconds={tokenExpirySeconds}
-      onDurationChange={setTokenExpirySeconds}
-      excludedUnits={[ExpiryUnit.SECONDS, ExpiryUnit.YEARS, ExpiryUnit.MONTHS]}
-    />
+    <div className="flex flex-col gap-2 text-sm max-w-45">
+      <span>Default access token expiry</span>
+      <DurationPicker
+        className="text-sm"
+        initialDurationSeconds={tokenExpirySeconds}
+        onDurationChange={setTokenExpirySeconds}
+        excludedUnits={[
+          ExpiryUnit.SECONDS,
+          ExpiryUnit.YEARS,
+          ExpiryUnit.MONTHS,
+        ]}
+      />
+    </div>
   );
 }

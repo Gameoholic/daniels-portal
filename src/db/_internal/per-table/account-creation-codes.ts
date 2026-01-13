@@ -1,6 +1,7 @@
 import { Permission } from "@/src/db/_internal/per-table/permissions";
 import { DALScope } from "@/src/db/dal";
 import db from "@/src/db/db";
+import { Titillium_Web } from "next/font/google";
 import { QueryResult } from "pg";
 
 export type AccountCreationCodeValidationResult =
@@ -41,7 +42,9 @@ export function isAccountCreationCodeValid(
 }
 
 export interface ServerAccountCreationCode {
+  id: string;
   code: string;
+  title: string;
   email: string;
   creation_timestamp: Date;
   creator_user_id: string;
@@ -52,10 +55,6 @@ export interface ServerAccountCreationCode {
   revoker_user_id: string | null;
   used_timestamp: Date | null;
   used_on_user_id: string | null;
-  deletion_timestamp: Date | null;
-  on_created_email_user: boolean;
-  on_created_email_creator: boolean;
-  on_used_email_user: boolean;
   on_used_email_creator: boolean;
 }
 
@@ -67,13 +66,13 @@ export interface ServerAccountCreationCode {
  */
 export async function getAccountCreationCode(
   _scope: DALScope,
-  code: string
+  id: string
 ): Promise<ServerAccountCreationCode> {
   try {
     const result: QueryResult<ServerAccountCreationCode> =
       await db.query<ServerAccountCreationCode>(
-        "SELECT * FROM account_creation_codes WHERE code = $1",
-        [code]
+        "SELECT * FROM account_creation_codes WHERE id = $1",
+        [id]
       );
 
     if (result.rowCount == 0) {
@@ -111,15 +110,14 @@ export async function getAllAccountCreationCodes(
  */
 export async function createAccountCreationCode(
   _scope: DALScope,
+  id: string,
   code: string,
+  title: string,
   email: string,
   creatorUserId: string,
   accountDefaultTokenExpirySeconds: number,
   permissionIds: string[],
   expirationTimestamp: Date,
-  onCreatedEmailUser: boolean,
-  onCreatedEmailCreator: boolean,
-  onUsedEmailUser: boolean,
   onUsedEmailCreator: boolean
 ): Promise<void> {
   try {
@@ -127,7 +125,9 @@ export async function createAccountCreationCode(
     const result = await db.query(
       `
       INSERT INTO account_creation_codes (
+        id,
         code,
+        title,
         email,
         creation_timestamp,
         creator_user_id,
@@ -137,18 +137,16 @@ export async function createAccountCreationCode(
         revoked_timestamp,
         revoker_user_id,
         used_timestamp,
-        deletion_timestamp,
-        on_created_email_user,
-        on_created_email_creator,
-        on_used_email_user,
         on_used_email_creator
       )
       VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, #12, $13, $14, $15
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
       );
       `,
       [
+        id,
         code,
+        title,
         email,
         now, // creation_timestamp
         creatorUserId,
@@ -158,10 +156,6 @@ export async function createAccountCreationCode(
         null, // revoked_timestamp
         null, // revoker_user_id
         null, // used_timestamp
-        null, // deletion_timestamp
-        onCreatedEmailUser,
-        onCreatedEmailCreator,
-        onUsedEmailUser,
         onUsedEmailCreator,
       ]
     );
@@ -183,14 +177,14 @@ export async function createAccountCreationCode(
  */
 export async function revokeAccountCreationCode(
   _scope: DALScope,
-  code: string,
+  id: string,
   revokerUserId: string
 ) {
   try {
     const now = new Date();
     const result = await db.query(
-      `UPDATE account_creation_codes SET revoked_timestamp = $1, revoker_user_id = $2 WHERE code = $3 AND expiration_timestamp > $1 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
-      [now, revokerUserId, code]
+      `UPDATE account_creation_codes SET revoked_timestamp = $1, revoker_user_id = $2 WHERE id = $3 AND expiration_timestamp > $1 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
+      [now, revokerUserId, id]
     );
     if (result.rowCount == 0) {
       throw Error("Code not found.");
@@ -208,7 +202,7 @@ export async function revokeAccountCreationCode(
  */
 export async function removePermissionFromAccountCreationCode(
   _scope: DALScope,
-  code: string,
+  id: string,
   permission: Permission
 ) {
   try {
@@ -216,8 +210,8 @@ export async function removePermissionFromAccountCreationCode(
     const result = await db.query(
       `UPDATE account_creation_codes
        SET permission_ids = array_remove(permission_ids, $1)
-       WHERE code = $2 AND expiration_timestamp > $3 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
-      [permission, code, now]
+       WHERE id = $2 AND expiration_timestamp > $3 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
+      [permission, id, now]
     );
 
     if (result.rowCount === 0) {
@@ -236,7 +230,7 @@ export async function removePermissionFromAccountCreationCode(
  */
 export async function addPermissionToAccountCreationCode(
   _scope: DALScope,
-  code: string,
+  id: string,
   permission: Permission
 ) {
   try {
@@ -244,13 +238,93 @@ export async function addPermissionToAccountCreationCode(
     const result = await db.query(
       `UPDATE account_creation_codes
        SET permission_ids = array_append(permission_ids, $1)
-       WHERE code = $2 AND expiration_timestamp > $3 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
-      [permission, code, now]
+       WHERE id = $2 AND expiration_timestamp > $3 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
+      [permission, id, now]
     );
 
     if (result.rowCount === 0) {
       throw new Error("Code not found.");
     }
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * An authenticated query that updates the account_default_token_expiry_seconds field of an account creation code.
+ * Only updates it as long as the code is valid and not expired/revoked, otherwise treats it as if code doesn't exist.
+ *
+ * @throws Error If the database query fails.
+ */
+export async function updateAccountCreationCodeAccountDefaultTokenExpiry(
+  _scope: DALScope,
+  id: string,
+  expirySeconds: number
+) {
+  try {
+    const now = new Date();
+    const result = await db.query(
+      `UPDATE account_creation_codes
+       SET account_default_token_expiry_seconds = $1
+       WHERE id = $2 AND expiration_timestamp > $3 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
+      [expirySeconds, id, now]
+    );
+
+    if (result.rowCount === 0) {
+      throw new Error("Code not found.");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * An authenticated query that updates the on_used_email_creator field of an account creation code.
+ * Only updates it as long as the code is valid and not expired/revoked, otherwise treats it as if code doesn't exist.
+ *
+ * @throws Error If the database query fails.
+ */
+export async function updateAccountCreationCodeOnUsedEmailCreator(
+  _scope: DALScope,
+  id: string,
+  emailCreator: boolean
+) {
+  try {
+    const now = new Date();
+    const result = await db.query(
+      `UPDATE account_creation_codes
+       SET on_used_email_creator = $1
+       WHERE id = $2 AND expiration_timestamp > $3 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
+      [emailCreator, id, now]
+    );
+
+    if (result.rowCount === 0) {
+      throw new Error("Code not found.");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * An authenticated query that returns whether an account creation code that is valid and not expired/revoked with a specific email address exists.
+ *
+ * @throws Error If the database query fails.
+ */
+export async function doesValidAccountCreationCodeWithThisEmailExist(
+  _scope: DALScope,
+  email: string
+) {
+  try {
+    const now = new Date();
+    const result = await db.query(
+      `SELECT 1 FROM account_creation_codes
+       WHERE email = $1
+       AND expiration_timestamp > $2 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
+      [email, now]
+    );
+
+    return result.rows.length > 0;
   } catch (error) {
     throw error;
   }

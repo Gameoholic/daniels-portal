@@ -54,6 +54,30 @@ export async function tokenless_updateAccessTokenAutomaticallyRevokedTimestamp(
 }
 
 /**
+ * A tokenless query that gets a user via its id.
+ *
+ * @throws Error If the database query fails.
+ * @returns null if the user doesn't exist.
+ */
+export async function tokenless_getUser(
+  _scope: DALTokenlessQueryScope,
+  id: string
+): Promise<ServerUser | null> {
+  try {
+    const result: QueryResult<ServerUser> = await db.query<ServerUser>(
+      "SELECT * FROM users WHERE id = $1",
+      [id]
+    );
+    if (result.rows.length == 0) {
+      return null;
+    }
+    return result.rows[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
  * A tokenless query that gets a user via its username.
  *
  * @throws Error If the database query fails.
@@ -108,6 +132,26 @@ export async function tokenless_getUserPermissions(
 }
 
 /**
+ * A tokenless query that adds a permission to user.
+ *
+ * @throws Error If the database query fails.
+ */
+export async function tokenless_addUserPermission(
+  _scope: DALTokenlessQueryScope,
+  userId: string,
+  permission: string
+): Promise<void> {
+  try {
+    await db.query<DBPermissionRow>(
+      `INSERT INTO user_permissions (user_id, permission_name) VALUES($1, $2);`,
+      [userId, permission]
+    );
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
  * A tokenless query that gets an account creation code, even if it's deleted, expired or used.
  *
  * @throws Error If the database query fails.
@@ -141,12 +185,13 @@ export async function tokenless_getAccountCreationCode(
  */
 export async function tokenless_setAccountCreationCodeUsed(
   _scope: DALTokenlessQueryScope,
-  code: string
+  code: string,
+  usedOnUserId: string
 ): Promise<void> {
   try {
     const result = await db.query(
-      "UPDATE account_creation_codes SET used_timestamp = $1 WHERE code = $2",
-      [new Date(), code]
+      "UPDATE account_creation_codes SET used_timestamp = $1, used_on_user_id = $2 WHERE code = $3",
+      [new Date(), usedOnUserId, code]
     );
     if (result.rowCount == 0) {
       throw Error("Account creation code doesn't exist.");
@@ -161,7 +206,7 @@ export async function tokenless_setAccountCreationCodeUsed(
  *
  * @throws Error If the database query fails.
  */
-export async function addUser(
+export async function tokenless_addUser(
   _scope: DALTokenlessQueryScope,
   userId: string,
   username: string,
@@ -211,7 +256,7 @@ export async function addUser(
  * @throws Error If the token doesn't exist.
  */
 
-export async function getAccessToken(
+export async function tokenless_getAccessToken(
   _scope: DALTokenlessQueryScope,
   token: string
 ): Promise<ServerAccessToken> {
@@ -272,7 +317,7 @@ export function isAccessTokenValid(
  *
  * @throws Error If the database query fails.
  */
-export async function addAccessToken(
+export async function tokenless_addAccessToken(
   _scope: DALTokenlessQueryScope,
   token: string,
   alias: string,

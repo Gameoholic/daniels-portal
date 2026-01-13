@@ -109,8 +109,8 @@ function CreateAccountCodeForm() {
             pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
             value={value}
             onChange={(newValue) => {
-              setValue(newValue);
-              if (newValue.length === 6) handleSubmit(newValue);
+              setValue(newValue.toUpperCase());
+              if (newValue.length === 6) handleSubmit(newValue.toUpperCase());
             }}
           >
             <InputOTPGroup>

@@ -3,7 +3,7 @@
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 import {
-  addUser,
+  tokenless_addUser,
   tokenless_getAccountCreationCode,
   tokenless_getUserByUsername,
   tokenless_setAccountCreationCodeUsed,
@@ -29,7 +29,7 @@ export async function verifyAccountCreationCodeAction(
   }
 
   const accountCreationCode = getAccountCreationCodeRequest.result;
-  if (accountCreationCode.deletion_timestamp) {
+  if (accountCreationCode.revoked_timestamp) {
     return databaseQueryError("Invalid account creation code.");
   }
   if (accountCreationCode.used_timestamp != null) {

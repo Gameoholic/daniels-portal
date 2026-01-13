@@ -105,8 +105,10 @@ const initDbTables = async (): Promise<void> => {
 
   const createAccountCreationCodesTableQuery = `
       CREATE TABLE IF NOT EXISTS account_creation_codes (
-        code VARCHAR PRIMARY KEY,
-        email VARCHAR NOT NULL UNIQUE,
+        id UUID PRIMARY KEY,
+        code VARCHAR UNIQUE NOT NULL,
+        title VARCHAR NOT NULL,
+        email VARCHAR NOT NULL,
         creation_timestamp TIMESTAMP NOT NULL,
         creator_user_id VARCHAR NOT NULL,
         account_default_token_expiry_seconds INTEGER NOT NULL,
@@ -116,10 +118,6 @@ const initDbTables = async (): Promise<void> => {
         revoker_user_id VARCHAR,
         used_timestamp TIMESTAMP,
         used_on_user_id VARCHAR,
-        deletion_timestamp TIMESTAMP,
-        on_created_email_user BOOLEAN NOT NULL,
-        on_created_email_creator BOOLEAN NOT NULL,
-        on_used_email_user BOOLEAN NOT NULL,
         on_used_email_creator BOOLEAN NOT NULL
       );
     `;

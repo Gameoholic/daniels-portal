@@ -12,6 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   AdminActions_GetAccountCreationCodes_Result,
   AdminActions_GetAccountCreationCodes_Result_Permission,
+  updateAccountCreationCodeAccountDefaultTokenExpiryAction,
+  updateAccountCreationCodeOnUsedEmailCreatorAction,
 } from "@/src/actions/per-page/admin";
 import { AddPermissionPopver } from "@/src/components/admin/account-creation-codes/AddPermissionPopover";
 import SensitiveComponent from "@/src/components/global/SensitiveComponent";
@@ -43,6 +45,7 @@ import {
   CheckCircle2Icon,
   CircleQuestionMark,
   ClockPlus,
+  MailWarning,
 } from "lucide-react";
 
 import {
@@ -52,6 +55,8 @@ import {
 import { toast } from "sonner";
 import { SeparatorWithHeader } from "@/src/components/global/SeparatorWithHeader";
 import { Date } from "@/src/components/global/Date";
+import { DurationPicker } from "@/src/components/global/DurationPicker";
+import { ExpiryUnit } from "@/src/util/duration";
 
 export function CodePanel({
   code,
@@ -112,10 +117,58 @@ export function CodePanel({
     setLoading(false);
   }
 
+  async function updateDefaultTokenExpiry(seconds: number) {
+    if (loading) return;
+    setLoading(true);
+
+    const res = await updateAccountCreationCodeAccountDefaultTokenExpiryAction(
+      code.id,
+      seconds
+    );
+
+    if (!res.success) {
+      toast("Couldn't update the default token expiry.", {
+        description: res.errorString,
+        icon: <AlertCircleIcon className="w-5 h-5 text-error-foreground" />,
+      });
+    } else {
+      toast("Successfully updated the default token expiry", {
+        icon: <CheckCircle2Icon className="w-5 h-5 text-success-foreground" />,
+      });
+      router.refresh();
+    }
+
+    setLoading(false);
+  }
+
+  async function updateEmailCreatorWhenUsed(emailCreator: boolean) {
+    if (loading) return;
+    setLoading(true);
+
+    const res = await updateAccountCreationCodeOnUsedEmailCreatorAction(
+      code.id,
+      emailCreator
+    );
+
+    if (!res.success) {
+      toast("Couldn't update the email setting.", {
+        description: res.errorString,
+        icon: <AlertCircleIcon className="w-5 h-5 text-error-foreground" />,
+      });
+    } else {
+      toast("Successfully updated the email setting.", {
+        icon: <CheckCircle2Icon className="w-5 h-5 text-success-foreground" />,
+      });
+      router.refresh();
+    }
+
+    setLoading(false);
+  }
+
   return (
     <Card className="flex flex-col">
       <CardHeader className="flex flex-row items-start justify-between">
-        <Code />
+        <Title />
         <RevokeButton />
       </CardHeader>
 
@@ -123,8 +176,9 @@ export function CodePanel({
         <Email />
         <Creator />
         <CreationDate />
+        <EmailCreatorWhenUsed />
         <Permissions />
-        <DefaultUserSettings />
+        <DefaultUserSettings loading={loading} />
       </CardContent>
 
       <CardFooter className="border-t-2 border-dashed">
@@ -133,11 +187,13 @@ export function CodePanel({
     </Card>
   );
 
-  function Code() {
+  function Title() {
     return (
       <div>
         <SeparatorWithHeader showBorder={false} header="Code" Icon={Terminal} />
-        <p className="font-mono font-semibold break-all text-xl">{code.code}</p>
+        <p className="font-mono font-semibold break-all text-xl">
+          {code.title || code.id}
+        </p>
       </div>
     );
   }
@@ -146,7 +202,7 @@ export function CodePanel({
       <Button
         variant="ghost"
         className="text-destructive"
-        onClick={() => revokeCode(code.code)}
+        onClick={() => revokeCode(code.id)}
       >
         <Trash2 className="w-4 h-4" />
         Revoke
@@ -201,6 +257,24 @@ export function CodePanel({
     );
   }
 
+  function EmailCreatorWhenUsed() {
+    return (
+      <div className="flex flex-col">
+        <SeparatorWithHeader
+          showBorder={false}
+          header={`Email ${code.creatorUsername} when account is created?`}
+          Icon={MailWarning}
+          className="mb-2"
+        />
+        <Checkbox
+          disabled={loading}
+          checked={code.onUsedEmailCreator}
+          onCheckedChange={(checked) => updateEmailCreatorWhenUsed(!!checked)}
+        ></Checkbox>
+      </div>
+    );
+  }
+
   function Permissions() {
     return (
       <div>
@@ -235,7 +309,7 @@ export function CodePanel({
           availablePermissions={availablePermissions}
           router={router}
           userCurrentPermissions={code.permissions.map((x) => x.name)}
-          accountCreationCode={code.code}
+          accountCreationCodeId={code.id}
         />
       </div>
     );
@@ -253,7 +327,7 @@ export function CodePanel({
           size="sm"
           className="mr-1"
           disabled={loading}
-          onClick={() => removePermissionFromCode(code.code, permission.name)}
+          onClick={() => removePermissionFromCode(code.id, permission.name)}
         >
           <Trash className="w-4 h-4 text-muted-foreground" />
         </Button>
@@ -284,7 +358,7 @@ export function CodePanel({
       );
     }
   }
-  function DefaultUserSettings() {
+  function DefaultUserSettings({ loading }: { loading: boolean }) {
     return (
       <div>
         <SeparatorWithHeader header="Default User Settings" />
@@ -298,13 +372,22 @@ export function CodePanel({
       return (
         <div>
           <SeparatorWithHeader
-            header="Token expiry"
+            header="Access token expiry"
             showBorder={false}
             Icon={Clock}
+            className="mb-2"
           />
-          <p className="text-sm mt-0.5">
-            {code.accountDefaultTokenExpirySeconds} seconds
-          </p>
+          <DurationPicker
+            className="text-sm"
+            disabled={loading}
+            initialDurationSeconds={code.accountDefaultTokenExpirySeconds}
+            onDurationChange={updateDefaultTokenExpiry}
+            excludedUnits={[
+              ExpiryUnit.SECONDS,
+              ExpiryUnit.YEARS,
+              ExpiryUnit.MONTHS,
+            ]}
+          />
         </div>
       );
     }

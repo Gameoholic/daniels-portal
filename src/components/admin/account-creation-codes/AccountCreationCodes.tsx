@@ -57,7 +57,7 @@ export default function AccountCreationCodes({
     const q = search.toLowerCase();
     return (
       code.email.toLowerCase().includes(q) ||
-      code.code.toLowerCase().includes(q)
+      code.title.toLowerCase().includes(q)
     );
   });
 
@@ -75,7 +75,7 @@ export default function AccountCreationCodes({
       <div className="flex justify-between mb-6 gap-20">
         <input
           type="text"
-          placeholder="Search by code or email..."
+          placeholder="Search by email or code title..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full p-3 rounded-lg border border-border

@@ -9,12 +9,15 @@ import {
 import {
   addPermissionToAccountCreationCode,
   createAccountCreationCode,
+  doesValidAccountCreationCodeWithThisEmailExist,
   getAccountCreationCode,
   getAllAccountCreationCodes,
   isAccountCreationCodeValid,
   removePermissionFromAccountCreationCode,
   revokeAccountCreationCode,
   ServerAccountCreationCode,
+  updateAccountCreationCodeAccountDefaultTokenExpiry,
+  updateAccountCreationCodeOnUsedEmailCreator,
 } from "@/src/db/_internal/per-table/account-creation-codes";
 import {
   addUserPermission,
@@ -28,9 +31,11 @@ import {
 import {
   getAllUsers,
   getUser,
+  getUserByEmail,
   ServerUser,
 } from "@/src/db/_internal/per-table/users";
 import { isAccessTokenValid } from "@/src/db/_internal/tokenless-queries";
+import { v4 as uuidv4 } from "uuid";
 import {
   checkForPermission,
   checkForPermissions,
@@ -41,6 +46,10 @@ import {
   GET_USER_ID_FROM_ACCESS_TOKEN,
   getAccessTokenFromBrowser,
 } from "@/src/db/dal";
+import { ExpiryUnit, getSeconds } from "@/src/util/duration";
+import { Resend } from "resend";
+import { InvitationToJoinSiteEmail } from "@/src/components/email/invitation-account-creation-code-email";
+import { render } from "@react-email/render";
 
 export interface AdminActions_GetUsers_Result_Permission {
   name: string;
@@ -374,7 +383,8 @@ export interface AdminActions_GetAccountCreationCodes_Result_Permission {
 }
 
 export interface AdminActions_GetAccountCreationCodes_Result {
-  code: string;
+  id: string;
+  title: string;
   email: string;
   creationTimestamp: Date;
   creatorUserId: string;
@@ -382,9 +392,6 @@ export interface AdminActions_GetAccountCreationCodes_Result {
   expirationTimestamp: Date;
   accountDefaultTokenExpirySeconds: number;
   permissions: AdminActions_GetAccountCreationCodes_Result_Permission[];
-  onCreatedEmailUser: boolean;
-  onCreatedEmailCreator: boolean;
-  onUsedEmailUser: boolean;
   onUsedEmailCreator: boolean;
 }
 
@@ -448,7 +455,8 @@ export async function getAllAccountCreationCodesAction(): Promise<
           return null;
         }
         return {
-          code: code.code,
+          id: code.id,
+          title: code.title,
           email: code.email,
           creationTimestamp: code.creation_timestamp,
           creatorUserId: getUserQuery.result.id,
@@ -457,9 +465,6 @@ export async function getAllAccountCreationCodesAction(): Promise<
           accountDefaultTokenExpirySeconds:
             code.account_default_token_expiry_seconds,
           permissions: permissions,
-          onCreatedEmailUser: code.on_created_email_user,
-          onCreatedEmailCreator: code.on_created_email_creator,
-          onUsedEmailUser: code.on_used_email_user,
           onUsedEmailCreator: code.on_used_email_creator,
         };
       })
@@ -478,7 +483,7 @@ export async function getAllAccountCreationCodesAction(): Promise<
  * Revokes an account creation code.
  */
 export async function revokeAccountCreationCodeAction(
-  code: string
+  id: string
 ): Promise<DatabaseQueryResult<void>> {
   if (
     !(
@@ -494,7 +499,7 @@ export async function revokeAccountCreationCodeAction(
   const revokeAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     revokeAccountCreationCode,
-    [code, GET_USER_ID_FROM_ACCESS_TOKEN]
+    [id, GET_USER_ID_FROM_ACCESS_TOKEN]
   );
 
   if (!revokeAccountCreationCodeQuery.success) {
@@ -514,7 +519,7 @@ export async function revokeAccountCreationCodeAction(
  * Removes a permission from an account creation code.
  */
 export async function removePermissionFromAccountCreationCodeAction(
-  code: string,
+  id: string,
   permissionToRemove: string
 ): Promise<DatabaseQueryResult<void>> {
   if (
@@ -537,7 +542,7 @@ export async function removePermissionFromAccountCreationCodeAction(
   const getAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getAccountCreationCode,
-    [code]
+    [id]
   );
   if (!getAccountCreationCodeQuery.success) {
     return databaseQueryError("Couldn't remove permission.");
@@ -556,7 +561,7 @@ export async function removePermissionFromAccountCreationCodeAction(
     await executeDatabaseQuery(
       await getAccessTokenFromBrowser(),
       removePermissionFromAccountCreationCode,
-      [code, permissionToRemove]
+      [id, permissionToRemove]
     );
   if (!removePermissionFromAccountCreationCodeQuery.success) {
     return { success: false, errorString: "Couldn't remove permission." };
@@ -572,7 +577,7 @@ export async function removePermissionFromAccountCreationCodeAction(
  * Adds a permission to an account creation code.
  */
 export async function addPermissionToAccountCreationCodeAction(
-  code: string,
+  id: string,
   permissionToAdd: string
 ): Promise<DatabaseQueryResult<void>> {
   if (
@@ -595,7 +600,7 @@ export async function addPermissionToAccountCreationCodeAction(
   const getAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getAccountCreationCode,
-    [code]
+    [id]
   );
   if (!getAccountCreationCodeQuery.success) {
     return databaseQueryError("Couldn't add permission.");
@@ -613,7 +618,7 @@ export async function addPermissionToAccountCreationCodeAction(
   const addPermissionToAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     addPermissionToAccountCreationCode,
-    [code, permissionToAdd]
+    [id, permissionToAdd]
   );
   if (!addPermissionToAccountCreationCodeQuery.success) {
     return { success: false, errorString: "Couldn't add permission." };
@@ -625,17 +630,14 @@ export async function addPermissionToAccountCreationCodeAction(
   };
 }
 
-export async function addAccountCreationCode(
-  code: string,
+export async function addAccountCreationCodeAction(
+  title: string,
   email: string,
   accountDefaultTokenExpirySeconds: number,
   permissionIds: string[],
   expirationTimestamp: Date,
-  onCreatedEmailUser: boolean,
-  onCreatedEmailCreator: boolean,
-  onUsedEmailUser: boolean,
   onUsedEmailCreator: boolean
-) {
+): Promise<DatabaseQueryResult<void>> {
   if (
     !(
       await checkForPermissions(
@@ -652,35 +654,190 @@ export async function addAccountCreationCode(
   if (email === "invalid") {
     return databaseQueryError("Invalid email argument.");
   }
-  if (code.length > 6 || !/^[A-Z0-9]+$/.test(code)) {
-    return databaseQueryError("Invalid code argument.");
+
+  // Verify that VALID code with this email doesn't already exist (an invalid one could exist, that's fine.)
+  const doesValidAccountCreationCodeWithThisEmailExistQuery =
+    await executeDatabaseQuery(
+      await getAccessTokenFromBrowser(),
+      doesValidAccountCreationCodeWithThisEmailExist,
+      [email]
+    );
+  if (!doesValidAccountCreationCodeWithThisEmailExistQuery.success) {
+    return databaseQueryError("Couldn't create code.");
   }
-  // todo: check upper limit too. Must set it somewhere in project settings, and have it be the same in user settings.
-  if (accountDefaultTokenExpirySeconds <= 0) {
+  if (doesValidAccountCreationCodeWithThisEmailExistQuery.result == true) {
+    return databaseQueryError(
+      "Account creation code with this email already exists."
+    );
+  }
+
+  // Verify that user with this email doesn't already exist
+  const getUserByEmailQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    getUserByEmail,
+    [email]
+  );
+  if (!getUserByEmailQuery.success) {
+    return databaseQueryError("Couldn't create code.");
+  }
+  if (getUserByEmailQuery.result != null) {
+    return databaseQueryError("User with this email already exists.");
+  }
+
+  if (
+    accountDefaultTokenExpirySeconds <= 0 ||
+    accountDefaultTokenExpirySeconds > getSeconds(ExpiryUnit.YEARS, 1)
+  ) {
     return databaseQueryError("Invalid default token expiry argument.");
   }
-  // todo: validate expiration seconds.
-  if (expirationTimestamp < new Date()) {
+
+  const now = new Date();
+  if (
+    expirationTimestamp <= now ||
+    (expirationTimestamp.getTime() - now.getTime()) / 1000 >
+      getSeconds(ExpiryUnit.YEARS, 1)
+  ) {
     return databaseQueryError("Invalid expiration date argument.");
   }
+
+  if (title.length >= 20) {
+    return databaseQueryError("Invalid title argument.");
+  }
+
+  // Generate random code
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+
+  const id = uuidv4();
+
   const createAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     createAccountCreationCode,
     [
+      id,
       code,
+      title,
       email,
       GET_USER_ID_FROM_ACCESS_TOKEN,
       accountDefaultTokenExpirySeconds,
       permissionIds,
       expirationTimestamp,
-      onCreatedEmailUser,
-      onCreatedEmailCreator,
-      onUsedEmailUser,
       onUsedEmailCreator,
     ]
   );
   if (!createAccountCreationCodeQuery.success) {
     return databaseQueryError("Couldn't create code.");
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const { error } = await resend.emails.send({
+    from: `${process.env.SITE_NAME} <${process.env.EMAIL_SENDER_NAME}@${process.env.DOMAIN}>`,
+    to: email,
+    subject: `Invitation to join ${process.env.SITE_NAME}`,
+    react: InvitationToJoinSiteEmail({
+      code: code,
+      codeExpirationTimestamp: expirationTimestamp,
+    }),
+  });
+  if (error) {
+    // todo: this is not ideal.
+    return databaseQueryError("Created code but couldn't send email to user.");
+  }
+
+  return {
+    success: true,
+    result: undefined, // void
+  };
+}
+
+export async function updateAccountCreationCodeAccountDefaultTokenExpiryAction(
+  id: string,
+  expirySeconds: number
+): Promise<DatabaseQueryResult<void>> {
+  if (
+    !(
+      await checkForPermissions(
+        Permission.UseApp_Admin,
+        Permission.App_Admin_ManageAccountCreationCodes
+      )
+    ).success
+  ) {
+    return databaseQueryError("No permission.");
+  }
+
+  // Validate expiry value is valid
+  if (expirySeconds < 0 || expirySeconds > getSeconds(ExpiryUnit.YEARS, 1)) {
+    return databaseQueryError("Invalid expiry seconds parameter.");
+  }
+
+  // Validate account creation code is valid
+  const getAccountCreationCodeQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    getAccountCreationCode,
+    [id]
+  );
+  if (!getAccountCreationCodeQuery.success) {
+    return databaseQueryError("Couldn't update default token expiry.");
+  }
+
+  // Finally, update the value
+  const addPermissionToAccountCreationCodeQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    updateAccountCreationCodeAccountDefaultTokenExpiry,
+    [id, expirySeconds]
+  );
+  if (!addPermissionToAccountCreationCodeQuery.success) {
+    return {
+      success: false,
+      errorString: "Couldn't update default token expiry.",
+    };
+  }
+
+  return {
+    success: true,
+    result: undefined, // void
+  };
+}
+
+export async function updateAccountCreationCodeOnUsedEmailCreatorAction(
+  id: string,
+  emailCreator: boolean
+): Promise<DatabaseQueryResult<void>> {
+  if (
+    !(
+      await checkForPermissions(
+        Permission.UseApp_Admin,
+        Permission.App_Admin_ManageAccountCreationCodes
+      )
+    ).success
+  ) {
+    return databaseQueryError("No permission.");
+  }
+
+  // Validate account creation code is valid
+  const getAccountCreationCodeQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    getAccountCreationCode,
+    [id]
+  );
+  if (!getAccountCreationCodeQuery.success) {
+    return databaseQueryError("Couldn't update email setting.");
+  }
+
+  // Finally, update the value
+  const addPermissionToAccountCreationCodeQuery = await executeDatabaseQuery(
+    await getAccessTokenFromBrowser(),
+    updateAccountCreationCodeOnUsedEmailCreator,
+    [id, emailCreator]
+  );
+  if (!addPermissionToAccountCreationCodeQuery.success) {
+    return {
+      success: false,
+      errorString: "Couldn't update email setting.",
+    };
   }
 
   return {

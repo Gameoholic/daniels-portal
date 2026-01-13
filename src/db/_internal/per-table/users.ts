@@ -89,6 +89,30 @@ export async function getUser(
 }
 
 /**
+ * An authenticated query that gets the user by email.
+ *
+ * @throws Error If the database query fails.
+ * @returns null if the user doesn't exist.
+ */
+export async function getUserByEmail(
+  _scope: DALScope,
+  email: string
+): Promise<ServerUser | null> {
+  try {
+    const result: QueryResult<ServerUser> = await db.query<ServerUser>(
+      "SELECT * FROM users WHERE email = $1",
+      [email]
+    );
+    if (result.rows.length == 0) {
+      return null;
+    }
+    return result.rows[0];
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
  * An authenticated query that gets all users.
  *
  * @throws Error If the database query fails.
