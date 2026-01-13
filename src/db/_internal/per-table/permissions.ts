@@ -148,25 +148,20 @@ export async function getUserPermissions(
   _scope: DALScope,
   userId: string
 ): Promise<ServerPermission[]> {
-  try {
-    const result: QueryResult<DBPermissionRow> =
-      await db.query<DBPermissionRow>(
-        `SELECT * FROM user_permissions WHERE user_id = $1`,
-        [userId]
-      );
-    return result.rows
-      .map((row) => {
-        const permission = assertIsPermission(row.permission_name);
-        if (!permission) return null;
-        return {
-          user_id: row.user_id,
-          permission,
-        };
-      })
-      .filter((x): x is ServerPermission => x !== null);
-  } catch (error) {
-    throw error;
-  }
+  const result: QueryResult<DBPermissionRow> = await db.query<DBPermissionRow>(
+    `SELECT * FROM user_permissions WHERE user_id = $1`,
+    [userId]
+  );
+  return result.rows
+    .map((row) => {
+      const permission = assertIsPermission(row.permission_name);
+      if (!permission) return null;
+      return {
+        user_id: row.user_id,
+        permission,
+      };
+    })
+    .filter((x): x is ServerPermission => x !== null);
 }
 
 /**
@@ -179,16 +174,12 @@ export async function deleteUserPermission(
   userId: string,
   permission: Permission
 ): Promise<void> {
-  try {
-    const result = await db.query(
-      `DELETE FROM user_permissions WHERE user_id = $1 AND permission_name = $2;`,
-      [userId, permission]
-    );
-    if (result.rowCount == 0) {
-      throw Error("Permission does not exist.");
-    }
-  } catch (error) {
-    throw error;
+  const result = await db.query(
+    `DELETE FROM user_permissions WHERE user_id = $1 AND permission_name = $2;`,
+    [userId, permission]
+  );
+  if (result.rowCount == 0) {
+    throw Error("Permission does not exist.");
   }
 }
 
@@ -202,18 +193,14 @@ export async function addUserPermission(
   userId: string,
   permission: Permission
 ): Promise<void> {
-  try {
-    await db.query(
-      `INSERT INTO user_permissions (
+  await db.query(
+    `INSERT INTO user_permissions (
         user_id,
         permission_name
       )
       VALUES (
         $1, $2
       );`,
-      [userId, permission]
-    );
-  } catch (error) {
-    throw error;
-  }
+    [userId, permission]
+  );
 }

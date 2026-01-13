@@ -23,16 +23,12 @@ export async function getUserAccessTokens(
   _scope: DALScope,
   userId: string
 ): Promise<ServerAccessToken[]> {
-  try {
-    const result: QueryResult<ServerAccessToken> =
-      await db.query<ServerAccessToken>(
-        "SELECT * FROM ACCESS_TOKENS WHERE user_id = $1",
-        [userId]
-      );
-    return result.rows;
-  } catch (error) {
-    throw error;
-  }
+  const result: QueryResult<ServerAccessToken> =
+    await db.query<ServerAccessToken>(
+      "SELECT * FROM ACCESS_TOKENS WHERE user_id = $1",
+      [userId]
+    );
+  return result.rows;
 }
 
 /**
@@ -46,17 +42,13 @@ export async function updateAccessTokenManuallyRevokedTimestamp(
   _scope: DALScope,
   token: string
 ) {
-  try {
-    const now = new Date();
-    const result = await db.query(
-      `UPDATE access_tokens SET manually_revoked_timestamp = $1 WHERE token = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp IS NULL AND automatically_revoked_timestamp IS NULL;`,
-      [now, token]
-    );
-    if (result.rowCount == 0) {
-      throw Error("Token not found.");
-    }
-  } catch (error) {
-    throw error;
+  const now = new Date();
+  const result = await db.query(
+    `UPDATE access_tokens SET manually_revoked_timestamp = $1 WHERE token = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp IS NULL AND automatically_revoked_timestamp IS NULL;`,
+    [now, token]
+  );
+  if (result.rowCount == 0) {
+    throw Error("Token not found.");
   }
 }
 
@@ -71,17 +63,13 @@ export async function updateAccessTokenManuallyRevokedTimestampByAlias(
   _scope: DALScope,
   tokenAlias: string
 ) {
-  try {
-    const now = new Date();
-    const result = await db.query(
-      `UPDATE access_tokens SET manually_revoked_timestamp = $1 WHERE alias = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp IS NULL AND automatically_revoked_timestamp IS NULL;`,
-      [now, tokenAlias]
-    );
-    if (result.rowCount == 0) {
-      throw Error("Token not found.");
-    }
-  } catch (error) {
-    throw error;
+  const now = new Date();
+  const result = await db.query(
+    `UPDATE access_tokens SET manually_revoked_timestamp = $1 WHERE alias = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp IS NULL AND automatically_revoked_timestamp IS NULL;`,
+    [now, tokenAlias]
+  );
+  if (result.rowCount == 0) {
+    throw Error("Token not found.");
   }
 }
 
@@ -96,17 +84,13 @@ export async function updateAccessTokenAutomaticallyRevokedTimestamp(
   _scope: DALScope,
   token: string
 ) {
-  try {
-    const now = new Date();
-    const result = await db.query(
-      `UPDATE access_tokens SET automatically_revoked_timestamp = $1 WHERE token = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp IS NULL AND automatically_revoked_timestamp IS NULL;`,
-      [now, token]
-    );
-    if (result.rowCount == 0) {
-      throw Error("Token not found.");
-    }
-  } catch (error) {
-    throw error;
+  const now = new Date();
+  const result = await db.query(
+    `UPDATE access_tokens SET automatically_revoked_timestamp = $1 WHERE token = $2 AND expiration_timestamp > $1 AND manually_revoked_timestamp IS NULL AND automatically_revoked_timestamp IS NULL;`,
+    [now, token]
+  );
+  if (result.rowCount == 0) {
+    throw Error("Token not found.");
   }
 }
 
@@ -121,19 +105,15 @@ export async function getAccessToken(
   _scope: DALScope,
   token: string
 ): Promise<ServerAccessToken | null> {
-  try {
-    const result: QueryResult<ServerAccessToken> =
-      await db.query<ServerAccessToken>(
-        "SELECT * FROM ACCESS_TOKENS WHERE token = $1",
-        [token]
-      );
-    if (result.rows.length == 0) {
-      return null;
-    }
-    return result.rows[0];
-  } catch (error) {
-    throw error;
+  const result: QueryResult<ServerAccessToken> =
+    await db.query<ServerAccessToken>(
+      "SELECT * FROM ACCESS_TOKENS WHERE token = $1",
+      [token]
+    );
+  if (result.rows.length == 0) {
+    return null;
   }
+  return result.rows[0];
 }
 
 /**
@@ -148,17 +128,13 @@ export async function getAccessTokenBelongingToUser(
   token: string,
   userId: string
 ): Promise<ServerAccessToken | null> {
-  try {
-    const result: QueryResult<ServerAccessToken> =
-      await db.query<ServerAccessToken>(
-        "SELECT * FROM ACCESS_TOKENS WHERE token = $1 AND user_id = $2",
-        [token, userId]
-      );
-    if (result.rows.length == 0) {
-      return null;
-    }
-    return result.rows[0];
-  } catch (error) {
-    throw error;
+  const result: QueryResult<ServerAccessToken> =
+    await db.query<ServerAccessToken>(
+      "SELECT * FROM ACCESS_TOKENS WHERE token = $1 AND user_id = $2",
+      [token, userId]
+    );
+  if (result.rows.length == 0) {
+    return null;
   }
+  return result.rows[0];
 }

@@ -19,16 +19,12 @@ export async function tokenless_getUserAccessTokens(
   _scope: DALTokenlessQueryScope,
   userId: string
 ): Promise<ServerAccessToken[]> {
-  try {
-    const result: QueryResult<ServerAccessToken> =
-      await db.query<ServerAccessToken>(
-        "SELECT * FROM ACCESS_TOKENS WHERE user_id = $1",
-        [userId]
-      );
-    return result.rows;
-  } catch (error) {
-    throw error;
-  }
+  const result: QueryResult<ServerAccessToken> =
+    await db.query<ServerAccessToken>(
+      "SELECT * FROM ACCESS_TOKENS WHERE user_id = $1",
+      [userId]
+    );
+  return result.rows;
 }
 
 /**
@@ -40,16 +36,12 @@ export async function tokenless_updateAccessTokenAutomaticallyRevokedTimestamp(
   _scope: DALTokenlessQueryScope,
   token: string
 ) {
-  try {
-    const result = await db.query(
-      `UPDATE access_tokens SET automatically_revoked_timestamp = $1 WHERE token = $2;`,
-      [new Date(), token]
-    );
-    if (result.rowCount == 0) {
-      throw Error("Token not found.");
-    }
-  } catch (error) {
-    throw error;
+  const result = await db.query(
+    `UPDATE access_tokens SET automatically_revoked_timestamp = $1 WHERE token = $2;`,
+    [new Date(), token]
+  );
+  if (result.rowCount == 0) {
+    throw Error("Token not found.");
   }
 }
 
@@ -63,18 +55,14 @@ export async function tokenless_getUser(
   _scope: DALTokenlessQueryScope,
   id: string
 ): Promise<ServerUser | null> {
-  try {
-    const result: QueryResult<ServerUser> = await db.query<ServerUser>(
-      "SELECT * FROM users WHERE id = $1",
-      [id]
-    );
-    if (result.rows.length == 0) {
-      return null;
-    }
-    return result.rows[0];
-  } catch (error) {
-    throw error;
+  const result: QueryResult<ServerUser> = await db.query<ServerUser>(
+    "SELECT * FROM users WHERE id = $1",
+    [id]
+  );
+  if (result.rows.length == 0) {
+    return null;
   }
+  return result.rows[0];
 }
 
 /**
@@ -87,18 +75,14 @@ export async function tokenless_getUserByUsername(
   _scope: DALTokenlessQueryScope,
   username: string
 ): Promise<ServerUser | null> {
-  try {
-    const result: QueryResult<ServerUser> = await db.query<ServerUser>(
-      "SELECT * FROM users WHERE username = $1",
-      [username]
-    );
-    if (result.rows.length == 0) {
-      return null;
-    }
-    return result.rows[0];
-  } catch (error) {
-    throw error;
+  const result: QueryResult<ServerUser> = await db.query<ServerUser>(
+    "SELECT * FROM users WHERE username = $1",
+    [username]
+  );
+  if (result.rows.length == 0) {
+    return null;
   }
+  return result.rows[0];
 }
 
 /**
@@ -110,25 +94,20 @@ export async function tokenless_getUserPermissions(
   _scope: DALTokenlessQueryScope,
   userId: string
 ): Promise<ServerPermission[]> {
-  try {
-    const result: QueryResult<DBPermissionRow> =
-      await db.query<DBPermissionRow>(
-        `SELECT * FROM user_permissions WHERE user_id = $1`,
-        [userId]
-      );
-    return result.rows
-      .map((row) => {
-        const permission = assertIsPermission(row.permission_name);
-        if (!permission) return null;
-        return {
-          user_id: row.user_id,
-          permission,
-        };
-      })
-      .filter((x): x is ServerPermission => x !== null);
-  } catch (error) {
-    throw error;
-  }
+  const result: QueryResult<DBPermissionRow> = await db.query<DBPermissionRow>(
+    `SELECT * FROM user_permissions WHERE user_id = $1`,
+    [userId]
+  );
+  return result.rows
+    .map((row) => {
+      const permission = assertIsPermission(row.permission_name);
+      if (!permission) return null;
+      return {
+        user_id: row.user_id,
+        permission,
+      };
+    })
+    .filter((x): x is ServerPermission => x !== null);
 }
 
 /**
@@ -141,14 +120,10 @@ export async function tokenless_addUserPermission(
   userId: string,
   permission: string
 ): Promise<void> {
-  try {
-    await db.query<DBPermissionRow>(
-      `INSERT INTO user_permissions (user_id, permission_name) VALUES($1, $2);`,
-      [userId, permission]
-    );
-  } catch (error) {
-    throw error;
-  }
+  await db.query<DBPermissionRow>(
+    `INSERT INTO user_permissions (user_id, permission_name) VALUES($1, $2);`,
+    [userId, permission]
+  );
 }
 
 /**
@@ -161,20 +136,16 @@ export async function tokenless_getAccountCreationCode(
   _scope: DALTokenlessQueryScope,
   code: string
 ): Promise<ServerAccountCreationCode> {
-  try {
-    const result: QueryResult<ServerAccountCreationCode> =
-      await db.query<ServerAccountCreationCode>(
-        "SELECT * FROM account_creation_codes WHERE code = $1",
-        [code]
-      );
+  const result: QueryResult<ServerAccountCreationCode> =
+    await db.query<ServerAccountCreationCode>(
+      "SELECT * FROM account_creation_codes WHERE code = $1",
+      [code]
+    );
 
-    if (result.rowCount == 0) {
-      throw Error("Account creation code does not exist.");
-    }
-    return result.rows[0];
-  } catch (error) {
-    throw error;
+  if (result.rowCount == 0) {
+    throw Error("Account creation code does not exist.");
   }
+  return result.rows[0];
 }
 
 /**
@@ -188,16 +159,12 @@ export async function tokenless_setAccountCreationCodeUsed(
   code: string,
   usedOnUserId: string
 ): Promise<void> {
-  try {
-    const result = await db.query(
-      "UPDATE account_creation_codes SET used_timestamp = $1, used_on_user_id = $2 WHERE code = $3",
-      [new Date(), usedOnUserId, code]
-    );
-    if (result.rowCount == 0) {
-      throw Error("Account creation code doesn't exist.");
-    }
-  } catch (error) {
-    throw error;
+  const result = await db.query(
+    "UPDATE account_creation_codes SET used_timestamp = $1, used_on_user_id = $2 WHERE code = $3",
+    [new Date(), usedOnUserId, code]
+  );
+  if (result.rowCount == 0) {
+    throw Error("Account creation code doesn't exist.");
   }
 }
 
@@ -215,10 +182,9 @@ export async function tokenless_addUser(
   defaultTokenExpirySeconds: number,
   maxTokensAtATime: number | null
 ) {
-  try {
-    const now = new Date();
-    await db.query(
-      `INSERT INTO users (
+  const now = new Date();
+  await db.query(
+    `INSERT INTO users (
         id,
         username,
         email,
@@ -232,21 +198,18 @@ export async function tokenless_addUser(
       VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9
       );`,
-      [
-        userId,
-        username,
-        email,
-        hashedPassword,
-        now,
-        null,
-        defaultTokenExpirySeconds,
-        maxTokensAtATime,
-        null,
-      ]
-    );
-  } catch (error) {
-    throw error;
-  }
+    [
+      userId,
+      username,
+      email,
+      hashedPassword,
+      now,
+      null,
+      defaultTokenExpirySeconds,
+      maxTokensAtATime,
+      null,
+    ]
+  );
 }
 
 /**
@@ -260,19 +223,15 @@ export async function tokenless_getAccessToken(
   _scope: DALTokenlessQueryScope,
   token: string
 ): Promise<ServerAccessToken> {
-  try {
-    const result: QueryResult<ServerAccessToken> =
-      await db.query<ServerAccessToken>(
-        "SELECT * FROM ACCESS_TOKENS WHERE token = $1",
-        [token]
-      );
-    if (result.rows.length == 0) {
-      throw Error("No token exist.");
-    }
-    return result.rows[0];
-  } catch (error) {
-    throw error;
+  const result: QueryResult<ServerAccessToken> =
+    await db.query<ServerAccessToken>(
+      "SELECT * FROM ACCESS_TOKENS WHERE token = $1",
+      [token]
+    );
+  if (result.rows.length == 0) {
+    throw Error("No token exist.");
   }
+  return result.rows[0];
 }
 
 export type AccessTokenValidationResult =
@@ -324,10 +283,9 @@ export async function tokenless_addAccessToken(
   userId: string,
   expirationTimestamp: Date
 ) {
-  try {
-    const now = new Date();
-    const result = await db.query(
-      `INSERT INTO access_tokens (
+  const now = new Date();
+  const result = await db.query(
+    `INSERT INTO access_tokens (
         token,
         alias,
         user_id,
@@ -338,13 +296,10 @@ export async function tokenless_addAccessToken(
       VALUES (
         $1, $2, $3, $4, $5, $6
       );`,
-      [token, alias, userId, expirationTimestamp, now, now]
-    );
-    if (result.rowCount == 0) {
-      // todo: for all the insert into, is this actually useful? should we include this check? currently we only have this check  here.
-      throw Error("Couldn't insert token.");
-    }
-  } catch (error) {
-    throw error;
+    [token, alias, userId, expirationTimestamp, now, now]
+  );
+  if (result.rowCount == 0) {
+    // todo: for all the insert into, is this actually useful? should we include this check? currently we only have this check  here.
+    throw Error("Couldn't insert token.");
   }
 }

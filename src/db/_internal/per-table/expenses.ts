@@ -31,14 +31,10 @@ export async function getUserExpenses(
   _scope: DALScope,
   userId: string
 ): Promise<ServerExpense[]> {
-  try {
-    const result: QueryResult<ServerExpense> = await db.query<ServerExpense>(
-      "SELECT * FROM expenses WHERE user_id = $1 ORDER BY timestamp ASC",
-      [userId]
-    );
+  const result: QueryResult<ServerExpense> = await db.query<ServerExpense>(
+    "SELECT * FROM expenses WHERE user_id = $1 ORDER BY timestamp ASC",
+    [userId]
+  );
 
-    return result.rows;
-  } catch (error) {
-    throw error;
-  }
+  return result.rows;
 }

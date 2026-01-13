@@ -23,16 +23,11 @@ export async function getGymWeights(
   _scope: DALScope,
   userId: string
 ): Promise<ServerGymWeight[]> {
-  try {
-    const result: QueryResult<ServerGymWeight> =
-      await db.query<ServerGymWeight>(
-        "SELECT * FROM gym_weights WHERE user_id = $1 ORDER BY timestamp ASC",
-        [userId]
-      );
-    return result.rows;
-  } catch (error) {
-    throw error;
-  }
+  const result: QueryResult<ServerGymWeight> = await db.query<ServerGymWeight>(
+    "SELECT * FROM gym_weights WHERE user_id = $1 ORDER BY timestamp ASC",
+    [userId]
+  );
+  return result.rows;
 }
 
 /**
@@ -46,10 +41,9 @@ export async function addGymWeight(
   weight: number,
   timestamp: Date
 ) {
-  try {
-    const now = new Date();
-    await db.query(
-      `INSERT INTO gym_weights (
+  const now = new Date();
+  await db.query(
+    `INSERT INTO gym_weights (
         id,
         user_id,
         timestamp,
@@ -62,11 +56,8 @@ export async function addGymWeight(
       VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8
       );`,
-      [uuidv4(), userId, timestamp, weight, null, null, now, now]
-    );
-  } catch (error) {
-    throw error;
-  }
+    [uuidv4(), userId, timestamp, weight, null, null, now, now]
+  );
 }
 
 // export async function deleteGymWeight(

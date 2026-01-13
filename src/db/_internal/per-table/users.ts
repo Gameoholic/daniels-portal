@@ -27,16 +27,12 @@ export async function updateDefaultTokenExpiry(
   userId: string,
   expirySeconds: number
 ): Promise<void> {
-  try {
-    const result = await db.query(
-      "UPDATE users SET default_token_expiry_seconds = $1 WHERE id = $2",
-      [expirySeconds, userId]
-    );
-    if (result.rowCount == 0) {
-      throw Error("User doesn't exist.");
-    }
-  } catch (error) {
-    throw error;
+  const result = await db.query(
+    "UPDATE users SET default_token_expiry_seconds = $1 WHERE id = $2",
+    [expirySeconds, userId]
+  );
+  if (result.rowCount == 0) {
+    throw Error("User doesn't exist.");
   }
 }
 
@@ -51,16 +47,12 @@ export async function updateMaxTokensAtATime(
   userId: string,
   max: number | null
 ): Promise<void> {
-  try {
-    const result = await db.query(
-      "UPDATE users SET max_tokens_at_a_time = $1 WHERE id = $2",
-      [max, userId]
-    );
-    if (result.rowCount == 0) {
-      throw Error("User doesn't exist.");
-    }
-  } catch (error) {
-    throw error;
+  const result = await db.query(
+    "UPDATE users SET max_tokens_at_a_time = $1 WHERE id = $2",
+    [max, userId]
+  );
+  if (result.rowCount == 0) {
+    throw Error("User doesn't exist.");
   }
 }
 
@@ -74,18 +66,14 @@ export async function getUser(
   _scope: DALScope,
   userId: string
 ): Promise<ServerUser | null> {
-  try {
-    const result: QueryResult<ServerUser> = await db.query<ServerUser>(
-      "SELECT * FROM users WHERE id = $1",
-      [userId]
-    );
-    if (result.rows.length == 0) {
-      return null;
-    }
-    return result.rows[0];
-  } catch (error) {
-    throw error;
+  const result: QueryResult<ServerUser> = await db.query<ServerUser>(
+    "SELECT * FROM users WHERE id = $1",
+    [userId]
+  );
+  if (result.rows.length == 0) {
+    return null;
   }
+  return result.rows[0];
 }
 
 /**
@@ -98,18 +86,14 @@ export async function getUserByEmail(
   _scope: DALScope,
   email: string
 ): Promise<ServerUser | null> {
-  try {
-    const result: QueryResult<ServerUser> = await db.query<ServerUser>(
-      "SELECT * FROM users WHERE email = $1",
-      [email]
-    );
-    if (result.rows.length == 0) {
-      return null;
-    }
-    return result.rows[0];
-  } catch (error) {
-    throw error;
+  const result: QueryResult<ServerUser> = await db.query<ServerUser>(
+    "SELECT * FROM users WHERE email = $1",
+    [email]
+  );
+  if (result.rows.length == 0) {
+    return null;
   }
+  return result.rows[0];
 }
 
 /**
@@ -118,14 +102,10 @@ export async function getUserByEmail(
  * @throws Error If the database query fails.
  */
 export async function getAllUsers(_scope: DALScope): Promise<ServerUser[]> {
-  try {
-    const result: QueryResult<ServerUser> = await db.query<ServerUser>(
-      "SELECT * FROM users"
-    );
-    return result.rows;
-  } catch (error) {
-    throw error;
-  }
+  const result: QueryResult<ServerUser> = await db.query<ServerUser>(
+    "SELECT * FROM users"
+  );
+  return result.rows;
 }
 
 /**
@@ -138,15 +118,11 @@ export async function updateUserLastLoginTimestamp(
   _scope: DALScope,
   userId: string
 ): Promise<void> {
-  try {
-    const result = await db.query(
-      "UPDATE users SET last_login_timestamp = $1 WHERE id = $2",
-      [new Date(), userId]
-    );
-    if (result.rowCount == 0) {
-      throw Error("User doesn't exist.");
-    }
-  } catch (error) {
-    throw error;
+  const result = await db.query(
+    "UPDATE users SET last_login_timestamp = $1 WHERE id = $2",
+    [new Date(), userId]
+  );
+  if (result.rowCount == 0) {
+    throw Error("User doesn't exist.");
   }
 }
