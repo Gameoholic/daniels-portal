@@ -45,7 +45,7 @@ export default function Home() {
   );
 }
 
-export async function ExpensesLoader() {
+async function ExpensesLoader() {
   const expenses = await getUserExpensesAction();
   return (
     <Expenses

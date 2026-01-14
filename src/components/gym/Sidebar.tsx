@@ -21,9 +21,7 @@ import {
   Map,
   Dumbbell,
 } from "lucide-react"; // https://lucide.dev/icons/
-import { logUserOut } from "@/src/actions/user-actions-old";
 import { toast } from "sonner";
-import { requestRevokeAccessToken } from "@/src/utils/db/auth/db_actions";
 import LogOutButton from "../global/LogOutButton";
 
 const navItems = [

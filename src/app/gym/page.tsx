@@ -32,19 +32,17 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import GymWeights from "@/src/components/gym/GymWeights";
-import { getUserGymWeightsAction } from "@/src/actions/per-page/gym";
 
 function Weights() {
   return (
     <section>
-      <Suspense
+      {/* <Suspense
         fallback={
           <GymWeights weights={[]} loading={true} errorString=""></GymWeights>
         }
       >
         <GymWeightsLoader />
-      </Suspense>
+      </Suspense> */}
     </section>
   );
 }
@@ -61,14 +59,14 @@ export default function Home() {
   );
 }
 
-export async function GymWeightsLoader() {
-  const weights = await getUserGymWeightsAction();
-  //await new Promise((resolve) => setTimeout(resolve, 500));
-  return (
-    <GymWeights
-      weights={weights.success ? weights.result : []}
-      loading={false}
-      errorString={weights.success ? "" : weights.errorString}
-    />
-  );
-}
+// async function GymWeightsLoader() {
+//   const weights = await getUserGymWeightsAction();
+//   //await new Promise((resolve) => setTimeout(resolve, 500));
+//   return (
+//     <GymWeights
+//       weights={weights.success ? weights.result : []}
+//       loading={false}
+//       errorString={weights.success ? "" : weights.errorString}
+//     />
+//   );
+// }

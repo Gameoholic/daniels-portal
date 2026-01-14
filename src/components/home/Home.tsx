@@ -14,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/src/components/custom-shadcn/card";
-import { ClientExpense, ClientUser } from "../../utils/client_types";
 import {
   Landmark,
   Info,

@@ -23,7 +23,7 @@ import {
 export default async function UserPage({
   params,
 }: {
-  params: { userId: string };
+  params: Promise<{ userId: string }>;
 }) {
   const { userId } = await params;
   return (
