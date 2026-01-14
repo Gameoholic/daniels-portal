@@ -95,7 +95,7 @@ export function IssueCodeDialog({
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
           <Plus className="mr-2 h-4 w-4" />
-          Issue Account Creation Token
+          Issue Account Creation Code
         </Button>
       </DialogTrigger>
 
