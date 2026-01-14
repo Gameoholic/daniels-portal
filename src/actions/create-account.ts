@@ -110,7 +110,6 @@ export async function createAccountAction(
         tokenless_addUserPermission,
         [userId, x]
       );
-      console.log("added. sucess: ", addUserPermissionQuery.success);
       return addUserPermissionQuery;
     })
   );
