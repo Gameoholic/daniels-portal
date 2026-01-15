@@ -31,11 +31,9 @@ async function UserDataLoader() {
   const getAllAccountCreationCodesActionResult =
     await getAllAccountCreationCodesAction();
 
-  console.log("debug a");
   if (!getAllAccountCreationCodesActionResult.success) {
     return null; // todo, this is a hacky quick fix
   }
-  console.log("debug b");
   let availablePermissions: Record<string, PermissionData> = {};
   availablePermissions = Object.fromEntries(
     Object.entries(PERMISSION_DATA).map(([permissionKey, data]) => [
@@ -47,7 +45,6 @@ async function UserDataLoader() {
       },
     ])
   );
-  console.log("debug c");
 
   return (
     <AccountCreationCodes
