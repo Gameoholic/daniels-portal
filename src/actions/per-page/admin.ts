@@ -409,6 +409,7 @@ export async function getAllAccountCreationCodesAction(): Promise<
       )
     ).success
   ) {
+    console.log("debug ddddd");
     return databaseQueryError("No permission.");
   }
   const getAllAccountCreationCodesQuery = await executeDatabaseQuery(
