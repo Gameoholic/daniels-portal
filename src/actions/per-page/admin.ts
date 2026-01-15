@@ -418,6 +418,7 @@ export async function getAllAccountCreationCodesAction(): Promise<
     []
   );
   if (!getAllAccountCreationCodesQuery.success) {
+    console.log("debug dddddee");
     return getAllAccountCreationCodesQuery;
   }
   const allCodes: ServerAccountCreationCode[] =
@@ -472,6 +473,7 @@ export async function getAllAccountCreationCodesAction(): Promise<
     );
 
   if (minimizedDataAccountCreationCodes.some((x) => x == null)) {
+    console.log("debug dddddeef");
     return databaseQueryError("Couldn't get one or more users from code.");
   }
 
