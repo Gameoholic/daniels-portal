@@ -93,7 +93,7 @@ async function main() {
     );
 
     console.log(
-      `\nBootstrap admin account creation code issued. Code: ${code}\nIt will expire 5 minutes from now.`
+      `\nBootstrap admin account creation code issued.\nCode: ${code}\nEmail: ${email}\nUsername:bootstrap_root\nIt will expire 5 minutes from now.`
     );
     console.log("Please delete the user as soon as possible.");
   } catch (err) {

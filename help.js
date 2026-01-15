@@ -8,7 +8,7 @@ Portal Daniel - Available Commands
    Creates a bootstrap admin account creation code, for when there are no users yet.
    Only use if there are no users or account creation codes yet.
 
-3. npm run drop_tables
+3. npm run drop-tables
    Prompts for confirmation and then drops the following tables:
      ACCESS_TOKENS
      ACCOUNT_CREATION_CODES

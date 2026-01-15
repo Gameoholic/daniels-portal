@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "drop_tables": "node drop-all-tables.js",
+    "help": "node help.js",
+    "drop-tables": "node drop-all-tables.js",
     "bootstrap": "node create-bootstrap-admin-user.js",
     "dev": "next dev --turbopack",
     "build": "next build",
