@@ -108,6 +108,15 @@ export async function middleware(req: NextRequest) {
   }
 
   if (
+    (path === "/time-management" || path.startsWith("/time-management/")) &&
+    userPermissions.some(
+      (permission) => permission.permission === Permission.UseApp_TimeManagement
+    )
+  ) {
+    return NextResponse.next();
+  }
+
+  if (
     (path === "/gym" || path.startsWith("/gym/")) &&
     userPermissions.some(
       (permission) => permission.permission === Permission.UseApp_Gym

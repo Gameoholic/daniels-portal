@@ -14,6 +14,7 @@ import {
   Album,
   Pencil,
   GitFork,
+  ClipboardClock,
 } from "lucide-react";
 import LogOutButton from "../global/LogOutButton";
 
@@ -32,6 +33,7 @@ const ICONS = [
   { name: "Album", component: Album },
   { name: "Pencil", component: Pencil },
   { name: "GitFork", component: GitFork },
+  { name: "clipboard-clock", component: ClipboardClock },
 ];
 
 export function SidebarClient({ navItems }: { navItems: SidebarItem[] }) {

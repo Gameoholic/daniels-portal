@@ -18,6 +18,7 @@ export enum Permission {
   UseApp_Wanikani = "use_app_wanikani",
   UseApp_Obsidian = "use_app_obsidian",
   UseApp_Git = "use_app_git",
+  UseApp_TimeManagement = "use_app_time_management",
 
   App_Admin_ManageAccountCreationCodes = "app_admin:manage_account_creation_codes",
   App_Admin_SearchUsers = "app_admin:search_users",
@@ -68,6 +69,11 @@ export const PERMISSION_DATA: Record<Permission, PermissionData> = {
   },
   [Permission.UseApp_Git]: {
     description: "Allows usage of the Git app.",
+    category: PermissionCategory.App,
+    isPrivileged: false,
+  },
+  [Permission.UseApp_TimeManagement]: {
+    description: "Allows usage of the time management app.",
     category: PermissionCategory.App,
     isPrivileged: false,
   },

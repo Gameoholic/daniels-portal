@@ -105,7 +105,6 @@ export async function createAccountAction(
   // todo don't make a db call per permission individually
   const addPermissionsQuery = await Promise.all(
     accountCreationCode.permission_ids.map(async (x) => {
-      console.log("attmepting to add permission", x);
       const addUserPermissionQuery = await tokenless_executeDatabaseQuery(
         tokenless_addUserPermission,
         [userId, x]

@@ -130,8 +130,27 @@ const initDbTables = async (): Promise<void> => {
       );
     `;
 
+  const createTimeManagementActivitiesTableQuery = `
+      CREATE TABLE IF NOT EXISTS time_management_activities (
+          id UUID PRIMARY KEY,
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          name VARCHAR NOT NULL,
+          percentage INTEGER NOT NULL
+      );
+    `;
+
+  const createTimeManagementActivitySessionsTableQuery = `
+      CREATE TABLE IF NOT EXISTS time_management_activity_sessions (
+        id UUID PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        activity_id UUID NOT NULL REFERENCES time_management_activities(id) ON DELETE CASCADE,
+        start_timestamp TIMESTAMP NOT NULL,
+        end_timestamp TIMESTAMP
+      );
+    `;
+
   // weight can be XXX.XX
-  const createGymWeightTableQuery = `
+  const createGymWeightsTableQuery = `
       CREATE TABLE IF NOT EXISTS gym_weights (
         id UUID PRIMARY KEY,
         user_id UUID NOT NULL,
@@ -153,7 +172,15 @@ const initDbTables = async (): Promise<void> => {
       "account_creation_codes"
     );
     await initDbTable(createUserPermissionsTableQuery, "user_permissions");
-    await initDbTable(createGymWeightTableQuery, "gym_weight");
+    await initDbTable(createGymWeightsTableQuery, "gym_weights");
+    await initDbTable(
+      createTimeManagementActivitiesTableQuery,
+      "time_management_activities"
+    );
+    await initDbTable(
+      createTimeManagementActivitySessionsTableQuery,
+      "time_management_activity_sessions"
+    );
     console.log("Successfully initialized database.");
   } catch (err) {
     console.error("Error initializing database:", err);

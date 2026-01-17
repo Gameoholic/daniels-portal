@@ -51,6 +51,12 @@ export async function SidebarServer() {
       requiredPermission: Permission.UseApp_Git,
     },
     {
+      href: "/time-management",
+      label: "Time Management",
+      iconName: "clipboard-clock",
+      requiredPermission: Permission.UseApp_TimeManagement,
+    },
+    {
       href: "/admin",
       label: "Admin Panel",
       iconName: "UserStar",
