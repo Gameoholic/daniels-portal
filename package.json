@@ -7,8 +7,9 @@
     "drop-tables": "node drop-all-tables.js",
     "bootstrap": "node create-bootstrap-admin-user.js",
     "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
+    "just-build": "next build",
+    "just-start": "next start",
+    "start": "next build && next start",
     "lint": "next lint"
   },
   "dependencies": {
