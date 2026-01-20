@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "help": "node help.js",
-    "drop-tables": "node drop-all-tables.js",
-    "bootstrap": "node create-bootstrap-admin-user.js",
+    "help": "npx tsx scripts/help.ts",
+    "drop-tables": "npx tsx scripts/drop-all-tables.ts",
+    "create-root-user": "npx tsx scripts/issue-root-account-creation-code.ts",
     "dev": "next dev --turbopack",
     "only-build": "next build",
     "only-start": "next start",

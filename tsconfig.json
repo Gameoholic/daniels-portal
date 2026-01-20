@@ -27,7 +27,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "create-bootstrap-admin-user.js"
+    "issue-admin-user.js"
   ],
   "exclude": ["node_modules"]
 }

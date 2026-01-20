@@ -15,7 +15,7 @@ const pool = new Pool({
 interface Database {
   query<T extends QueryResultRow = any>(
     text: string,
-    params?: any[]
+    params?: any[],
   ): Promise<QueryResult<T>>;
   getPool(): Pool;
   verifyConnection(): Promise<boolean>;
@@ -25,7 +25,7 @@ interface Database {
 const db: Database = {
   query: async <T extends QueryResultRow = any>(
     text: string,
-    params?: any[]
+    params?: any[],
   ): Promise<QueryResult<T>> => {
     return pool.query<T>(text, params);
   },
@@ -49,7 +49,7 @@ async function verifyConnection(): Promise<void> {
   console.log(
     result
       ? "Connected to the PostgreSQL database"
-      : "Error connecting to the database."
+      : "Error connecting to the database.",
   );
 }
 
@@ -104,22 +104,35 @@ const initDbTables = async (): Promise<void> => {
     `;
 
   const createAccountCreationCodesTableQuery = `
-      CREATE TABLE IF NOT EXISTS account_creation_codes (
-        id UUID PRIMARY KEY,
-        code VARCHAR UNIQUE NOT NULL,
-        title VARCHAR NOT NULL,
-        email VARCHAR NOT NULL,
-        creation_timestamp TIMESTAMP NOT NULL,
-        creator_user_id VARCHAR NOT NULL,
-        account_default_token_expiry_seconds INTEGER NOT NULL,
-        permission_ids VARCHAR[] NOT NULL,
-        expiration_timestamp TIMESTAMP NOT NULL,
-        revoked_timestamp TIMESTAMP,
-        revoker_user_id VARCHAR,
-        used_timestamp TIMESTAMP,
-        used_on_user_id VARCHAR,
-        on_used_email_creator BOOLEAN NOT NULL
-      );
+    CREATE TYPE IF NOT EXISTS creator_type_enum AS ENUM ('user', 'system');
+
+    CREATE TABLE IF NOT EXISTS account_creation_codes (
+      id UUID PRIMARY KEY,
+      code VARCHAR UNIQUE NOT NULL,
+      title VARCHAR NOT NULL,
+      email VARCHAR NOT NULL,
+      creation_timestamp TIMESTAMP NOT NULL,
+      creator_type creator_type_enum NOT NULL,
+      creator_user_id UUID REFERENCES users(id) ON DELETE RESTRICT, 
+      account_default_token_expiry_seconds INTEGER NOT NULL,
+      permission_ids VARCHAR[] NOT NULL,
+      expiration_timestamp TIMESTAMP NOT NULL,
+      revoked_timestamp TIMESTAMP,
+      revoker_user_id UUID REFERENCES users(id) ON DELETE RESTRICT,
+      used_timestamp TIMESTAMP,
+      used_on_user_id UUID REFERENCES users(id) ON DELETE RESTRICT,
+      on_used_email_creator BOOLEAN NOT NULL,
+
+      CONSTRAINT creator_consistency_check CHECK (
+        (creator_type = 'user' AND creator_user_id IS NOT NULL)
+        OR
+        (creator_type = 'system' AND creator_user_id IS NULL)
+      ),
+
+      CONSTRAINT email_creator_only_for_user CHECK (
+        on_used_email_creator = false OR creator_type = 'user'
+      )
+    );
     `;
 
   const createUserPermissionsTableQuery = `
@@ -169,17 +182,17 @@ const initDbTables = async (): Promise<void> => {
     await initDbTable(createAccessTokensTableQuery, "access_tokens");
     await initDbTable(
       createAccountCreationCodesTableQuery,
-      "account_creation_codes"
+      "account_creation_codes",
     );
     await initDbTable(createUserPermissionsTableQuery, "user_permissions");
     await initDbTable(createGymWeightsTableQuery, "gym_weights");
     await initDbTable(
       createTimeManagementActivitiesTableQuery,
-      "time_management_activities"
+      "time_management_activities",
     );
     await initDbTable(
       createTimeManagementActivitySessionsTableQuery,
-      "time_management_activity_sessions"
+      "time_management_activity_sessions",
     );
     console.log("Successfully initialized database.");
   } catch (err) {
@@ -190,7 +203,7 @@ const initDbTables = async (): Promise<void> => {
 
 const initDbTable = async (
   createTableQuery: string,
-  databaseName: string
+  databaseName: string,
 ): Promise<void> => {
   try {
     await db.query(createTableQuery);

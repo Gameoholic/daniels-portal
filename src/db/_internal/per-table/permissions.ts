@@ -7,6 +7,7 @@ import db from "@/src/db/db";
 export enum PermissionCategory {
   App = "Use App",
   Admin = "Admin",
+  IssuableOnlyBySystem = "IssuableOnlyBySystem",
 }
 
 export enum Permission {
@@ -22,11 +23,12 @@ export enum Permission {
 
   App_Admin_ManageAccountCreationCodes = "app_admin:manage_account_creation_codes",
   App_Admin_SearchUsers = "app_admin:search_users",
-
   App_Admin_ManageUsers_DeleteUsers = "app_admin:manage_users:delete_users",
   App_Admin_ManageUsers_ManagePermissions = "app_admin:manage_users:manage_permissions",
   App_Admin_ManageUsers_BanUsers = "app_admin:manage_users:ban_users",
   App_Admin_ManageUsers_ManageAccessTokens = "app_admin:manage_users:manage_access_tokens",
+
+  SUDO = "sudo",
 }
 
 export interface PermissionData {
@@ -118,6 +120,12 @@ export const PERMISSION_DATA: Record<Permission, PermissionData> = {
     category: PermissionCategory.Admin,
     isPrivileged: true,
   },
+
+  [Permission.SUDO]: {
+    description: "Any permission check wil succeed.",
+    category: PermissionCategory.IssuableOnlyBySystem,
+    isPrivileged: true,
+  },
 };
 
 /**
@@ -152,11 +160,11 @@ export function assertIsPermission(value: string): Permission | null {
  */
 export async function getUserPermissions(
   _scope: DALScope,
-  userId: string
+  userId: string,
 ): Promise<ServerPermission[]> {
   const result: QueryResult<DBPermissionRow> = await db.query<DBPermissionRow>(
     `SELECT * FROM user_permissions WHERE user_id = $1`,
-    [userId]
+    [userId],
   );
   return result.rows
     .map((row) => {
@@ -178,11 +186,11 @@ export async function getUserPermissions(
 export async function deleteUserPermission(
   _scope: DALScope,
   userId: string,
-  permission: Permission
+  permission: Permission,
 ): Promise<void> {
   const result = await db.query(
     `DELETE FROM user_permissions WHERE user_id = $1 AND permission_name = $2;`,
-    [userId, permission]
+    [userId, permission],
   );
   if (result.rowCount == 0) {
     throw Error("Permission does not exist.");
@@ -197,7 +205,7 @@ export async function deleteUserPermission(
 export async function addUserPermission(
   _scope: DALScope,
   userId: string,
-  permission: Permission
+  permission: Permission,
 ): Promise<void> {
   await db.query(
     `INSERT INTO user_permissions (
@@ -207,6 +215,6 @@ export async function addUserPermission(
       VALUES (
         $1, $2
       );`,
-    [userId, permission]
+    [userId, permission],
   );
 }

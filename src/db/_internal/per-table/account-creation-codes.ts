@@ -1,7 +1,6 @@
 import { Permission } from "@/src/db/_internal/per-table/permissions";
 import { DALScope } from "@/src/db/dal";
 import db from "@/src/db/db";
-import { Titillium_Web } from "next/font/google";
 import { QueryResult } from "pg";
 
 export type AccountCreationCodeValidationResult =
@@ -15,7 +14,7 @@ export enum AccountCreationCodeInvalidReason {
 }
 
 export function isAccountCreationCodeValid(
-  code: ServerAccountCreationCode
+  code: ServerAccountCreationCode,
 ): AccountCreationCodeValidationResult {
   if (code.revoked_timestamp) {
     return {
@@ -41,13 +40,18 @@ export function isAccountCreationCodeValid(
   return { valid: true };
 }
 
+export enum ServerAccountCreationCodeCreatorType {
+  USER = "user",
+  SYSTEM = "system",
+}
 export interface ServerAccountCreationCode {
   id: string;
   code: string;
   title: string;
   email: string;
   creation_timestamp: Date;
-  creator_user_id: string;
+  creator_type: ServerAccountCreationCodeCreatorType;
+  creator_user_id: string | null; // guranteed not to be null if creator type is "user"
   account_default_token_expiry_seconds: number;
   permission_ids: string[];
   expiration_timestamp: Date;
@@ -66,12 +70,12 @@ export interface ServerAccountCreationCode {
  */
 export async function getAccountCreationCode(
   _scope: DALScope,
-  id: string
+  id: string,
 ): Promise<ServerAccountCreationCode> {
   const result: QueryResult<ServerAccountCreationCode> =
     await db.query<ServerAccountCreationCode>(
       "SELECT * FROM account_creation_codes WHERE id = $1",
-      [id]
+      [id],
     );
 
   if (result.rowCount == 0) {
@@ -86,11 +90,11 @@ export async function getAccountCreationCode(
  * @throws Error If the database query fails.
  */
 export async function getAllAccountCreationCodes(
-  _scope: DALScope
+  _scope: DALScope,
 ): Promise<ServerAccountCreationCode[]> {
   const result: QueryResult<ServerAccountCreationCode> =
     await db.query<ServerAccountCreationCode>(
-      "SELECT * FROM account_creation_codes"
+      "SELECT * FROM account_creation_codes",
     );
   return result.rows;
 }
@@ -110,7 +114,7 @@ export async function createAccountCreationCode(
   accountDefaultTokenExpirySeconds: number,
   permissionIds: string[],
   expirationTimestamp: Date,
-  onUsedEmailCreator: boolean
+  onUsedEmailCreator: boolean,
 ): Promise<void> {
   const now = new Date();
   const result = await db.query(
@@ -121,6 +125,7 @@ export async function createAccountCreationCode(
         title,
         email,
         creation_timestamp,
+        creator_type,
         creator_user_id,
         account_default_token_expiry_seconds,
         permission_ids,
@@ -131,7 +136,7 @@ export async function createAccountCreationCode(
         on_used_email_creator
       )
       VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
       );
       `,
     [
@@ -140,6 +145,7 @@ export async function createAccountCreationCode(
       title,
       email,
       now, // creation_timestamp
+      ServerAccountCreationCodeCreatorType.USER,
       creatorUserId,
       accountDefaultTokenExpirySeconds,
       permissionIds,
@@ -148,7 +154,7 @@ export async function createAccountCreationCode(
       null, // revoker_user_id
       null, // used_timestamp
       onUsedEmailCreator,
-    ]
+    ],
   );
 
   if (result.rowCount === 0) {
@@ -166,12 +172,12 @@ export async function createAccountCreationCode(
 export async function revokeAccountCreationCode(
   _scope: DALScope,
   id: string,
-  revokerUserId: string
+  revokerUserId: string,
 ) {
   const now = new Date();
   const result = await db.query(
     `UPDATE account_creation_codes SET revoked_timestamp = $1, revoker_user_id = $2 WHERE id = $3 AND expiration_timestamp > $1 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
-    [now, revokerUserId, id]
+    [now, revokerUserId, id],
   );
   if (result.rowCount == 0) {
     throw Error("Code not found.");
@@ -187,14 +193,14 @@ export async function revokeAccountCreationCode(
 export async function removePermissionFromAccountCreationCode(
   _scope: DALScope,
   id: string,
-  permission: Permission
+  permission: Permission,
 ) {
   const now = new Date();
   const result = await db.query(
     `UPDATE account_creation_codes
        SET permission_ids = array_remove(permission_ids, $1)
        WHERE id = $2 AND expiration_timestamp > $3 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
-    [permission, id, now]
+    [permission, id, now],
   );
 
   if (result.rowCount === 0) {
@@ -211,14 +217,14 @@ export async function removePermissionFromAccountCreationCode(
 export async function addPermissionToAccountCreationCode(
   _scope: DALScope,
   id: string,
-  permission: Permission
+  permission: Permission,
 ) {
   const now = new Date();
   const result = await db.query(
     `UPDATE account_creation_codes
        SET permission_ids = array_append(permission_ids, $1)
        WHERE id = $2 AND expiration_timestamp > $3 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
-    [permission, id, now]
+    [permission, id, now],
   );
 
   if (result.rowCount === 0) {
@@ -235,14 +241,14 @@ export async function addPermissionToAccountCreationCode(
 export async function updateAccountCreationCodeAccountDefaultTokenExpiry(
   _scope: DALScope,
   id: string,
-  expirySeconds: number
+  expirySeconds: number,
 ) {
   const now = new Date();
   const result = await db.query(
     `UPDATE account_creation_codes
        SET account_default_token_expiry_seconds = $1
        WHERE id = $2 AND expiration_timestamp > $3 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
-    [expirySeconds, id, now]
+    [expirySeconds, id, now],
   );
 
   if (result.rowCount === 0) {
@@ -259,14 +265,14 @@ export async function updateAccountCreationCodeAccountDefaultTokenExpiry(
 export async function updateAccountCreationCodeOnUsedEmailCreator(
   _scope: DALScope,
   id: string,
-  emailCreator: boolean
+  emailCreator: boolean,
 ) {
   const now = new Date();
   const result = await db.query(
     `UPDATE account_creation_codes
        SET on_used_email_creator = $1
        WHERE id = $2 AND expiration_timestamp > $3 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
-    [emailCreator, id, now]
+    [emailCreator, id, now],
   );
 
   if (result.rowCount === 0) {
@@ -281,14 +287,14 @@ export async function updateAccountCreationCodeOnUsedEmailCreator(
  */
 export async function doesValidAccountCreationCodeWithThisEmailExist(
   _scope: DALScope,
-  email: string
+  email: string,
 ) {
   const now = new Date();
   const result = await db.query(
     `SELECT 1 FROM account_creation_codes
        WHERE email = $1
        AND expiration_timestamp > $2 AND revoked_timestamp IS NULL AND used_timestamp IS NULL;`,
-    [email, now]
+    [email, now],
   );
 
   return result.rows.length > 0;

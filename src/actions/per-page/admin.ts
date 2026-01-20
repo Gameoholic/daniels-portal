@@ -77,7 +77,7 @@ export async function getAllUsersAction(): Promise<
     !(
       await checkForPermissions(
         Permission.UseApp_Admin,
-        Permission.App_Admin_SearchUsers
+        Permission.App_Admin_SearchUsers,
       )
     ).success
   ) {
@@ -87,7 +87,7 @@ export async function getAllUsersAction(): Promise<
   const getAllUsersQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getAllUsers,
-    []
+    [],
   );
   if (!getAllUsersQuery.success) {
     return getAllUsersQuery;
@@ -103,7 +103,7 @@ export async function getAllUsersAction(): Promise<
         const getUserPermissionsRequest = await executeDatabaseQuery(
           await getAccessTokenFromBrowser(),
           getUserPermissions,
-          [user.id]
+          [user.id],
         );
         if (!getUserPermissionsRequest.success) {
           return null;
@@ -125,17 +125,17 @@ export async function getAllUsersAction(): Promise<
           maxTokensAtATime: user.max_tokens_at_a_time,
           permissions: permissions,
         };
-      })
+      }),
     );
 
   if (minimizedDataUsers.some((x) => x == null)) {
     return databaseQueryError(
-      "Couldn't get permissions for one or more users."
+      "Couldn't get permissions for one or more users.",
     );
   }
 
   return databaseQuerySuccess(
-    minimizedDataUsers as AdminActions_GetUsers_Result[] // we check earlier that none of it is null, this is just so compiler doesn't shout
+    minimizedDataUsers as AdminActions_GetUsers_Result[], // we check earlier that none of it is null, this is just so compiler doesn't shout
   );
 }
 
@@ -166,13 +166,13 @@ export interface AdminActions_GetUser_Result {
  * @returns User.
  */
 export async function getUserAction(
-  userId: string
+  userId: string,
 ): Promise<DatabaseQueryResult<AdminActions_GetUser_Result>> {
   if (
     !(
       await checkForPermissions(
         Permission.UseApp_Admin,
-        Permission.App_Admin_SearchUsers
+        Permission.App_Admin_SearchUsers,
       )
     ).success
   ) {
@@ -182,19 +182,19 @@ export async function getUserAction(
   const getUserQueryPromise = executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUser,
-    [userId]
+    [userId],
   );
 
   const getUserPermissionsQueryPromise = executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUserPermissions,
-    [userId]
+    [userId],
   );
 
   const getUserAccessTokensQueryPromise = executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUserAccessTokens,
-    [userId]
+    [userId],
   );
 
   const [getUserQuery, getUserPermissionsQuery, getUserAccessTokensQuery] =
@@ -216,7 +216,7 @@ export async function getUserAction(
   // Filter out invalid access tokens
   const allAccessTokens = getUserAccessTokensQuery.result;
   const onlyValidAccessTokens = allAccessTokens.filter(
-    (x) => isAccessTokenValid(x).valid
+    (x) => isAccessTokenValid(x).valid,
   );
 
   // Minimize data passed to client to only necessary data
@@ -253,13 +253,13 @@ export async function getUserAction(
  */
 export async function deleteUserPermissionAction(
   userId: string,
-  permissionToRemove: string
+  permissionToRemove: string,
 ): Promise<DatabaseQueryResult<void>> {
   if (
     !(
       await checkForPermissions(
         Permission.UseApp_Admin,
-        Permission.App_Admin_ManageUsers_ManagePermissions
+        Permission.App_Admin_ManageUsers_ManagePermissions,
       )
     ).success
   ) {
@@ -274,7 +274,7 @@ export async function deleteUserPermissionAction(
   const getUserQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUser,
-    [GET_USER_ID_FROM_ACCESS_TOKEN]
+    [GET_USER_ID_FROM_ACCESS_TOKEN],
   );
   if (!getUserQuery.success || getUserQuery.result == null) {
     return databaseQueryError("Couldn't delete permission.");
@@ -286,7 +286,7 @@ export async function deleteUserPermissionAction(
   const deleteUserPermissionQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     deleteUserPermission,
-    [userId, permissionToRemove]
+    [userId, permissionToRemove],
   );
   if (!deleteUserPermissionQuery.success) {
     return databaseQueryError("Couldn't delete permission.");
@@ -300,13 +300,13 @@ export async function deleteUserPermissionAction(
  */
 export async function addUserPermissionAction(
   userId: string,
-  permissionToAdd: string
+  permissionToAdd: string,
 ): Promise<DatabaseQueryResult<void>> {
   if (
     !(
       await checkForPermissions(
         Permission.UseApp_Admin,
-        Permission.App_Admin_ManageUsers_ManagePermissions
+        Permission.App_Admin_ManageUsers_ManagePermissions,
       )
     ).success
   ) {
@@ -321,7 +321,7 @@ export async function addUserPermissionAction(
   const getUserQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUser,
-    [GET_USER_ID_FROM_ACCESS_TOKEN]
+    [GET_USER_ID_FROM_ACCESS_TOKEN],
   );
   if (!getUserQuery.success || getUserQuery.result == null) {
     return databaseQueryError("Couldn't add permission.");
@@ -333,7 +333,7 @@ export async function addUserPermissionAction(
   const addUserPermissionQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     addUserPermission,
-    [userId, permissionToAdd]
+    [userId, permissionToAdd],
   );
   if (!addUserPermissionQuery.success) {
     return databaseQueryError("Couldn't add permission.");
@@ -346,13 +346,13 @@ export async function addUserPermissionAction(
  * 'Manually' revokes a token using its alias.
  */
 export async function revokeAccessTokenAction(
-  tokenAlias: string
+  tokenAlias: string,
 ): Promise<DatabaseQueryResult<void>> {
   if (
     !(
       await checkForPermissions(
         Permission.UseApp_Admin,
-        Permission.App_Admin_ManageUsers_ManageAccessTokens
+        Permission.App_Admin_ManageUsers_ManageAccessTokens,
       )
     ).success
   ) {
@@ -363,7 +363,7 @@ export async function revokeAccessTokenAction(
     await executeDatabaseQuery(
       await getAccessTokenFromBrowser(),
       updateAccessTokenManuallyRevokedTimestampByAlias,
-      [tokenAlias]
+      [tokenAlias],
     );
 
   if (!updateAccessTokenManuallyRevokedTimestampQuery.success) {
@@ -387,8 +387,8 @@ export interface AdminActions_GetAccountCreationCodes_Result {
   title: string;
   email: string;
   creationTimestamp: Date;
-  creatorUserId: string;
-  creatorUsername: string;
+  creatorUserId: string | null; // if null, then was created by system
+  creatorUsername: string | null; // if null, then was created by system
   expirationTimestamp: Date;
   accountDefaultTokenExpirySeconds: number;
   permissions: AdminActions_GetAccountCreationCodes_Result_Permission[];
@@ -405,7 +405,7 @@ export async function getAllAccountCreationCodesAction(): Promise<
     !(
       await checkForPermissions(
         Permission.UseApp_Admin,
-        Permission.App_Admin_ManageAccountCreationCodes
+        Permission.App_Admin_ManageAccountCreationCodes,
       )
     ).success
   ) {
@@ -414,7 +414,7 @@ export async function getAllAccountCreationCodesAction(): Promise<
   const getAllAccountCreationCodesQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getAllAccountCreationCodes,
-    []
+    [],
   );
   if (!getAllAccountCreationCodesQuery.success) {
     return getAllAccountCreationCodesQuery;
@@ -424,7 +424,7 @@ export async function getAllAccountCreationCodesAction(): Promise<
 
   // Filter out invalid codes
   const onlyValidCodes = allCodes.filter(
-    (x) => isAccountCreationCodeValid(x).valid
+    (x) => isAccountCreationCodeValid(x).valid,
   );
 
   // Minimize data passed to client to only necessary data
@@ -446,28 +446,32 @@ export async function getAllAccountCreationCodesAction(): Promise<
             })
             .filter((x) => x !== null);
 
-        const getUserQuery = await executeDatabaseQuery(
-          await getAccessTokenFromBrowser(),
-          getUser,
-          [code.creator_user_id]
-        );
-        if (!getUserQuery.success || !getUserQuery.result) {
-          return null;
+        let creatorUser = null;
+        if (code.creator_user_id) {
+          const getUserQuery = await executeDatabaseQuery(
+            await getAccessTokenFromBrowser(),
+            getUser,
+            [code.creator_user_id],
+          );
+          if (!getUserQuery.success || !getUserQuery.result) {
+            return null;
+          }
+          creatorUser = getUserQuery.result;
         }
         return {
           id: code.id,
           title: code.title,
           email: code.email,
           creationTimestamp: code.creation_timestamp,
-          creatorUserId: getUserQuery.result.id,
-          creatorUsername: getUserQuery.result.username,
+          creatorUserId: creatorUser ? creatorUser.id : null,
+          creatorUsername: creatorUser ? creatorUser.username : null,
           expirationTimestamp: code.expiration_timestamp,
           accountDefaultTokenExpirySeconds:
             code.account_default_token_expiry_seconds,
           permissions: permissions,
           onUsedEmailCreator: code.on_used_email_creator,
         };
-      })
+      }),
     );
 
   if (minimizedDataAccountCreationCodes.some((x) => x == null)) {
@@ -475,7 +479,7 @@ export async function getAllAccountCreationCodesAction(): Promise<
   }
 
   return databaseQuerySuccess(
-    minimizedDataAccountCreationCodes as AdminActions_GetAccountCreationCodes_Result[]
+    minimizedDataAccountCreationCodes as AdminActions_GetAccountCreationCodes_Result[],
   ); // we check earlier that none of it is null, this is just so compiler doesn't shout
 }
 
@@ -483,13 +487,13 @@ export async function getAllAccountCreationCodesAction(): Promise<
  * Revokes an account creation code.
  */
 export async function revokeAccountCreationCodeAction(
-  id: string
+  id: string,
 ): Promise<DatabaseQueryResult<void>> {
   if (
     !(
       await checkForPermissions(
         Permission.UseApp_Admin,
-        Permission.App_Admin_ManageAccountCreationCodes
+        Permission.App_Admin_ManageAccountCreationCodes,
       )
     ).success
   ) {
@@ -499,7 +503,7 @@ export async function revokeAccountCreationCodeAction(
   const revokeAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     revokeAccountCreationCode,
-    [id, GET_USER_ID_FROM_ACCESS_TOKEN]
+    [id, GET_USER_ID_FROM_ACCESS_TOKEN],
   );
 
   if (!revokeAccountCreationCodeQuery.success) {
@@ -520,13 +524,13 @@ export async function revokeAccountCreationCodeAction(
  */
 export async function removePermissionFromAccountCreationCodeAction(
   id: string,
-  permissionToRemove: string
+  permissionToRemove: string,
 ): Promise<DatabaseQueryResult<void>> {
   if (
     !(
       await checkForPermissions(
         Permission.UseApp_Admin,
-        Permission.App_Admin_ManageAccountCreationCodes
+        Permission.App_Admin_ManageAccountCreationCodes,
       )
     ).success
   ) {
@@ -542,7 +546,7 @@ export async function removePermissionFromAccountCreationCodeAction(
   const getAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getAccountCreationCode,
-    [id]
+    [id],
   );
   if (!getAccountCreationCodeQuery.success) {
     return databaseQueryError("Couldn't remove permission.");
@@ -561,7 +565,7 @@ export async function removePermissionFromAccountCreationCodeAction(
     await executeDatabaseQuery(
       await getAccessTokenFromBrowser(),
       removePermissionFromAccountCreationCode,
-      [id, permissionToRemove]
+      [id, permissionToRemove],
     );
   if (!removePermissionFromAccountCreationCodeQuery.success) {
     return { success: false, errorString: "Couldn't remove permission." };
@@ -578,13 +582,13 @@ export async function removePermissionFromAccountCreationCodeAction(
  */
 export async function addPermissionToAccountCreationCodeAction(
   id: string,
-  permissionToAdd: string
+  permissionToAdd: string,
 ): Promise<DatabaseQueryResult<void>> {
   if (
     !(
       await checkForPermissions(
         Permission.UseApp_Admin,
-        Permission.App_Admin_ManageAccountCreationCodes
+        Permission.App_Admin_ManageAccountCreationCodes,
       )
     ).success
   ) {
@@ -600,7 +604,7 @@ export async function addPermissionToAccountCreationCodeAction(
   const getAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getAccountCreationCode,
-    [id]
+    [id],
   );
   if (!getAccountCreationCodeQuery.success) {
     return databaseQueryError("Couldn't add permission.");
@@ -618,7 +622,7 @@ export async function addPermissionToAccountCreationCodeAction(
   const addPermissionToAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     addPermissionToAccountCreationCode,
-    [id, permissionToAdd]
+    [id, permissionToAdd],
   );
   if (!addPermissionToAccountCreationCodeQuery.success) {
     return { success: false, errorString: "Couldn't add permission." };
@@ -636,13 +640,13 @@ export async function addAccountCreationCodeAction(
   accountDefaultTokenExpirySeconds: number,
   permissionIds: string[],
   expirationTimestamp: Date,
-  onUsedEmailCreator: boolean
+  onUsedEmailCreator: boolean,
 ): Promise<DatabaseQueryResult<void>> {
   if (
     !(
       await checkForPermissions(
         Permission.UseApp_Admin,
-        Permission.App_Admin_ManageAccountCreationCodes
+        Permission.App_Admin_ManageAccountCreationCodes,
       )
     ).success
   ) {
@@ -660,14 +664,14 @@ export async function addAccountCreationCodeAction(
     await executeDatabaseQuery(
       await getAccessTokenFromBrowser(),
       doesValidAccountCreationCodeWithThisEmailExist,
-      [email]
+      [email],
     );
   if (!doesValidAccountCreationCodeWithThisEmailExistQuery.success) {
     return databaseQueryError("Couldn't create code.");
   }
   if (doesValidAccountCreationCodeWithThisEmailExistQuery.result == true) {
     return databaseQueryError(
-      "Account creation code with this email already exists."
+      "Account creation code with this email already exists.",
     );
   }
 
@@ -675,7 +679,7 @@ export async function addAccountCreationCodeAction(
   const getUserByEmailQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUserByEmail,
-    [email]
+    [email],
   );
   if (!getUserByEmailQuery.success) {
     return databaseQueryError("Couldn't create code.");
@@ -707,7 +711,11 @@ export async function addAccountCreationCodeAction(
   // Generate random code
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code = "";
-  for (let i = 0; i < 6; i++) {
+  for (
+    let i = 0;
+    i < parseInt(process.env.ACCOUNT_CREATION_CODE_LENGTH!);
+    i++
+  ) {
     code += chars[Math.floor(Math.random() * chars.length)];
   }
 
@@ -726,7 +734,7 @@ export async function addAccountCreationCodeAction(
       permissionIds,
       expirationTimestamp,
       onUsedEmailCreator,
-    ]
+    ],
   );
   if (!createAccountCreationCodeQuery.success) {
     return databaseQueryError("Couldn't create code.");
@@ -755,13 +763,13 @@ export async function addAccountCreationCodeAction(
 
 export async function updateAccountCreationCodeAccountDefaultTokenExpiryAction(
   id: string,
-  expirySeconds: number
+  expirySeconds: number,
 ): Promise<DatabaseQueryResult<void>> {
   if (
     !(
       await checkForPermissions(
         Permission.UseApp_Admin,
-        Permission.App_Admin_ManageAccountCreationCodes
+        Permission.App_Admin_ManageAccountCreationCodes,
       )
     ).success
   ) {
@@ -777,7 +785,7 @@ export async function updateAccountCreationCodeAccountDefaultTokenExpiryAction(
   const getAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getAccountCreationCode,
-    [id]
+    [id],
   );
   if (!getAccountCreationCodeQuery.success) {
     return databaseQueryError("Couldn't update default token expiry.");
@@ -787,7 +795,7 @@ export async function updateAccountCreationCodeAccountDefaultTokenExpiryAction(
   const addPermissionToAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     updateAccountCreationCodeAccountDefaultTokenExpiry,
-    [id, expirySeconds]
+    [id, expirySeconds],
   );
   if (!addPermissionToAccountCreationCodeQuery.success) {
     return {
@@ -804,13 +812,13 @@ export async function updateAccountCreationCodeAccountDefaultTokenExpiryAction(
 
 export async function updateAccountCreationCodeOnUsedEmailCreatorAction(
   id: string,
-  emailCreator: boolean
+  emailCreator: boolean,
 ): Promise<DatabaseQueryResult<void>> {
   if (
     !(
       await checkForPermissions(
         Permission.UseApp_Admin,
-        Permission.App_Admin_ManageAccountCreationCodes
+        Permission.App_Admin_ManageAccountCreationCodes,
       )
     ).success
   ) {
@@ -821,7 +829,7 @@ export async function updateAccountCreationCodeOnUsedEmailCreatorAction(
   const getAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getAccountCreationCode,
-    [id]
+    [id],
   );
   if (!getAccountCreationCodeQuery.success) {
     return databaseQueryError("Couldn't update email setting.");
@@ -831,7 +839,7 @@ export async function updateAccountCreationCodeOnUsedEmailCreatorAction(
   const addPermissionToAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     updateAccountCreationCodeOnUsedEmailCreator,
-    [id, emailCreator]
+    [id, emailCreator],
   );
   if (!addPermissionToAccountCreationCodeQuery.success) {
     return {
