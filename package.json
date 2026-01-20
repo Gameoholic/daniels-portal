@@ -7,9 +7,8 @@
     "drop-tables": "npx tsx scripts/drop-all-tables.ts",
     "create-root-user": "npx tsx scripts/issue-root-account-creation-code.ts",
     "dev": "next dev --turbopack",
-    "only-build": "next build",
-    "only-start": "next start",
-    "start": "next build && next start",
+    "build": "next build",
+    "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {

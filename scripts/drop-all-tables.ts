@@ -41,7 +41,6 @@ async function main(): Promise<void> {
 
   try {
     await client.connect();
-    console.log("✅ Connected to the database.");
 
     const answer = await askConfirmation(
       "⚠️ This will DROP multiple tables! Type I_UNDERSTAND to continue: ",
