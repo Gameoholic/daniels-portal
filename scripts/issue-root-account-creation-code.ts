@@ -68,7 +68,7 @@ async function main(): Promise<void> {
     );
     console.log(
       "This will allow the creation of a fully privileged 'root' admin user.\n" +
-        "The account is system-issued and will bypass all permission checks.\n",
+        "The account is system-issued and will bypass all permission checks, thanks to the SUDO permission.\n",
     );
 
     const email: string = await rl.question(
