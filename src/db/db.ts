@@ -125,9 +125,9 @@ const initDbTables = async (): Promise<void> => {
       permission_ids VARCHAR[] NOT NULL,
       expiration_timestamp TIMESTAMP NOT NULL,
       revoked_timestamp TIMESTAMP,
-      revoker_user_id UUID REFERENCES users(id) ON DELETE RESTRICT,
+      revoker_user_id UUID,
       used_timestamp TIMESTAMP,
-      used_on_user_id UUID REFERENCES users(id) ON DELETE RESTRICT,
+      used_on_user_id UUID,
       on_used_email_creator BOOLEAN NOT NULL,
 
       CONSTRAINT creator_consistency_check CHECK (
