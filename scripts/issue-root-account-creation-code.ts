@@ -126,9 +126,11 @@ async function main(): Promise<void> {
       ],
     );
 
-    console.log("\n✅ System admin account creation code issued successfully.");
     console.log(
-      `⚠️  You have ${EXPIRATION_MINUTES} minutes to use this code before it expires.`,
+      "\n✅ System admin account creation code issued successfully. Check your email.",
+    );
+    console.log(
+      `⚠️  You have ${EXPIRATION_MINUTES} minutes to use the code before it expires.`,
     );
 
     await client.end();
