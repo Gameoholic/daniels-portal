@@ -27,14 +27,11 @@ Portal Daniel - Available Commands
 4. npm run dev
    Starts the Next.js development server with Turbopack.
 
-5. npm run only-build
+5. npm run build
    Builds the Next.js project for production (optimized build).
 
-6. npm run only-start
+6. npm run start
    Starts the optimized production server for the built project.
-
-7. npm run start
-   Builds and starts the production server in one step.
 `);
 
   process.exit(0);
