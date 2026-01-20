@@ -103,9 +103,16 @@ const initDbTables = async (): Promise<void> => {
       );
     `;
 
-  const createAccountCreationCodesTableQuery = `
-    CREATE TYPE IF NOT EXISTS creator_type_enum AS ENUM ('user', 'system');
+  const createAccountCreationCodesCreatorEnumQuery = `
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'creator_type_enum') THEN
+        CREATE TYPE creator_type_enum AS ENUM ('user', 'system');
+      END IF;
+    END$$;
+    `;
 
+  const createAccountCreationCodesTableQuery = `
     CREATE TABLE IF NOT EXISTS account_creation_codes (
       id UUID PRIMARY KEY,
       code VARCHAR UNIQUE NOT NULL,
@@ -180,6 +187,10 @@ const initDbTables = async (): Promise<void> => {
     await initDbTable(createExpensesTableQuery, "expenses");
     await initDbTable(createUsersTableQuery, "users");
     await initDbTable(createAccessTokensTableQuery, "access_tokens");
+    await initDbTable(
+      createAccountCreationCodesCreatorEnumQuery,
+      "acccount_creation_codes_creator_enum",
+    );
     await initDbTable(
       createAccountCreationCodesTableQuery,
       "account_creation_codes",
