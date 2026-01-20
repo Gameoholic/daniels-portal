@@ -41,7 +41,7 @@ export type DatabaseQueryResult<T> =
   | { success: false; errorString: string };
 
 export function databaseQueryError(
-  errorString: string
+  errorString: string,
 ): DatabaseQueryResult<any> {
   return { success: false, errorString: errorString };
 }
@@ -49,7 +49,7 @@ export function databaseQueryError(
 export function databaseQuerySuccess(): DatabaseQueryResult<void>;
 export function databaseQuerySuccess<T>(result: T): DatabaseQueryResult<T>;
 export function databaseQuerySuccess<T>(
-  result?: T
+  result?: T,
 ): DatabaseQueryResult<T | void> {
   return {
     success: true,
@@ -61,15 +61,15 @@ export function databaseQuerySuccess<T>(
  * Can pass this as a parameter to get the user ID from the passed access token.
  */
 export const GET_USER_ID_FROM_ACCESS_TOKEN: unique symbol = Symbol(
-  "USE_USER_ID_FROM_ACCESS_TOKEN"
+  "USE_USER_ID_FROM_ACCESS_TOKEN",
 );
 
 function resolveArgs<Args extends readonly unknown[]>(
   args: Args,
-  userIdFromToken: string
+  userIdFromToken: string,
 ): Args {
   return args.map((arg) =>
-    arg === GET_USER_ID_FROM_ACCESS_TOKEN ? userIdFromToken : arg
+    arg === GET_USER_ID_FROM_ACCESS_TOKEN ? userIdFromToken : arg,
   ) as unknown as Args;
 }
 
@@ -102,7 +102,7 @@ export async function executeDatabaseQuery<T, Args extends readonly unknown[]>(
   mappedErrorCodeMessages: Record<string, string> = {},
   unmappedErrorCodeMessage: string = "An unknown error has occurred.",
   unknownErrorMessage1: string = "An unknown error has occurred.",
-  unknownErrorMessage2: string = "An unknown error has occurred."
+  unknownErrorMessage2: string = "An unknown error has occurred.",
 ): Promise<DatabaseQueryResult<T>> {
   try {
     // Check validity of provided access token
@@ -112,9 +112,8 @@ export async function executeDatabaseQuery<T, Args extends readonly unknown[]>(
         errorString: "Invalid access token.",
       };
     }
-    let accessTokenVerificationResult = await verifyAccessToken(
-      requesterAccessToken
-    );
+    let accessTokenVerificationResult =
+      await verifyAccessToken(requesterAccessToken);
     if (!accessTokenVerificationResult.success) {
       return accessTokenVerificationResult;
     }
@@ -122,18 +121,18 @@ export async function executeDatabaseQuery<T, Args extends readonly unknown[]>(
     // Update the access token last use timestamp
     await updateAccessTokenLastUseTimestamp(
       accessTokenVerificationResult.result.user_id,
-      requesterAccessToken
+      requesterAccessToken,
     );
 
     const resolvedArgs = resolveArgs(
       args,
-      accessTokenVerificationResult.result.user_id
+      accessTokenVerificationResult.result.user_id,
     ) as Args;
 
     // Finally, execute the query
     let result: T = await queryMethod(
       {} as DALScope, // Creates the scope
-      ...resolvedArgs
+      ...resolvedArgs,
     );
 
     return { success: true, result: result };
@@ -148,7 +147,7 @@ export async function executeDatabaseQuery<T, Args extends readonly unknown[]>(
         console.error(
           "DB Query unhandled DatabaseError error:",
           error.code,
-          error
+          error,
         );
       }
     } else if (error instanceof Error) {
@@ -180,7 +179,7 @@ export async function tokenless_executeDatabaseQuery<T, Args extends any[]>(
   mappedErrorCodeMessages: Record<string, string> = {},
   unmappedErrorCodeMessage: string = "An unknown error has occurred.",
   unknownErrorMessage1: string = "An unknown error has occurred.",
-  unknownErrorMessage2: string = "An unknown error has occurred."
+  unknownErrorMessage2: string = "An unknown error has occurred.",
 ): Promise<DatabaseQueryResult<T>> {
   /// todo: this will be used for databse queries without user token
   // do this for login and register
@@ -190,7 +189,7 @@ export async function tokenless_executeDatabaseQuery<T, Args extends any[]>(
     // Finally, execute the query
     let result: T = await queryMethod(
       {} as DALTokenlessQueryScope, // Creates the scope
-      ...args
+      ...args,
     );
 
     return { success: true, result: result };
@@ -205,7 +204,7 @@ export async function tokenless_executeDatabaseQuery<T, Args extends any[]>(
         console.error(
           "DB Query unhandled DatabaseError error:",
           error.code,
-          error
+          error,
         );
       }
     } else if (error instanceof Error) {
@@ -233,7 +232,7 @@ export async function getAccessTokenFromBrowser(): Promise<string | null> {
 }
 
 export async function verifyAccessToken(
-  token: string | null
+  token: string | null,
 ): Promise<DatabaseQueryResult<ServerAccessToken>> {
   if (!token) {
     return {
@@ -246,7 +245,7 @@ export async function verifyAccessToken(
   // We use the function directly and not through executeDatabaseQuery because this function is called there!
   const getAccessTokenRequest = await tokenless_executeDatabaseQuery(
     tokenless_getAccessToken,
-    [token]
+    [token],
   );
   if (!getAccessTokenRequest.success) {
     return {
@@ -299,12 +298,12 @@ export async function verifyAccessToken(
  */
 async function updateAccessTokenLastUseTimestamp(
   requesterUserId: string,
-  token: string
+  token: string,
 ): Promise<void> {
   try {
     const result = await db.query(
       "UPDATE access_tokens SET last_use_timestamp = $1 WHERE token = $2 AND user_id = $3",
-      [new Date(), token, requesterUserId]
+      [new Date(), token, requesterUserId],
     );
     if (result.rowCount == 0) {
       throw Error("Token doesn't exist.");
@@ -319,17 +318,22 @@ async function updateAccessTokenLastUseTimestamp(
  * @returns Whether the user (using the access token from the browser) has a certain permission
  */
 export async function checkForPermission(
-  permission: Permission
+  permission: Permission,
 ): Promise<DatabaseQueryResult<void>> {
   const getUserPermissionsQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
     getUserPermissions,
-    [GET_USER_ID_FROM_ACCESS_TOKEN]
+    [GET_USER_ID_FROM_ACCESS_TOKEN],
   );
   if (!getUserPermissionsQuery.success) {
     return databaseQueryError("An error has occurred.");
   }
-  if (!getUserPermissionsQuery.result.find((x) => x.permission == permission)) {
+  if (
+    !getUserPermissionsQuery.result.find(
+      (x) => x.permission === Permission.SUDO,
+    ) &&
+    !getUserPermissionsQuery.result.find((x) => x.permission == permission)
+  ) {
     return databaseQueryError("No permission.");
   }
 

@@ -51,14 +51,14 @@ export async function middleware(req: NextRequest) {
   if (!token) {
     return NextResponse.json(
       { error: "You must log in to access this page." },
-      { status: 401 }
+      { status: 401 },
     );
   }
   // Verify token validity
   if (!verifyAccessTokenResult.success) {
     return NextResponse.json(
       { error: verifyAccessTokenResult.errorString }, // todo: should error strings be public to users? we should have a table that converts private error strings to public ones, changable in config. across entire wbesite
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -79,48 +79,56 @@ export async function middleware(req: NextRequest) {
   // We do this via the without-token method and not an action because the executeDatabaseQuery method takes the token from the cookie directly.
   const getUserPermissionsRequest = await tokenless_executeDatabaseQuery(
     tokenless_getUserPermissions,
-    [userId]
+    [userId],
   );
   if (!getUserPermissionsRequest.success) {
     return NextResponse.json(
       { error: "Failed due to an internal error." },
-      { status: 500 }
+      { status: 500 },
     );
   }
   const userPermissions: ServerPermission[] = getUserPermissionsRequest.result;
 
+  const hasSudoPermission = userPermissions.some(
+    (x) => x.permission === Permission.SUDO,
+  );
   if (
     (path === "/admin" || path.startsWith("/admin")) &&
-    userPermissions.some(
-      (permission) => permission.permission === Permission.UseApp_Admin
-    )
+    (userPermissions.some(
+      (permission) => permission.permission === Permission.UseApp_Admin,
+    ) ||
+      hasSudoPermission)
   ) {
     return NextResponse.next();
   }
 
   if (
     (path === "/book-keeping" || path.startsWith("/book-keeping/")) &&
-    userPermissions.some(
-      (permission) => permission.permission === Permission.UseApp_BookKeeping
-    )
+    (userPermissions.some(
+      (permission) => permission.permission === Permission.UseApp_BookKeeping,
+    ) ||
+      hasSudoPermission)
   ) {
     return NextResponse.next();
   }
 
   if (
     (path === "/time-management" || path.startsWith("/time-management/")) &&
-    userPermissions.some(
-      (permission) => permission.permission === Permission.UseApp_TimeManagement
-    )
+    (userPermissions.some(
+      (permission) =>
+        permission.permission === Permission.UseApp_TimeManagement,
+    ) ||
+      hasSudoPermission)
   ) {
     return NextResponse.next();
   }
 
   if (
     (path === "/gym" || path.startsWith("/gym/")) &&
-    userPermissions.some(
-      (permission) => permission.permission === Permission.UseApp_Gym
-    )
+    (userPermissions.some(
+      (permission) => permission.permission === Permission.UseApp_Gym,
+    ) ||
+      hasSudoPermission)
   ) {
     return NextResponse.next();
   }
