@@ -160,19 +160,56 @@ const initDbTables = async (): Promise<void> => {
       );
     `;
 
-  // weight can be XXX.XX
-  const createGymWeightsTableQuery = `
-      CREATE TABLE IF NOT EXISTS gym_weights (
+  const createGymMachinesTableQuery = `
+    CREATE TABLE IF NOT EXISTS gym_machines (
         id UUID PRIMARY KEY,
-        user_id UUID NOT NULL,
-        timestamp TIMESTAMP,
-        weight NUMERIC(5, 2) NOT NULL,
-        deletion_timestamp TIMESTAMP,
-        last_edited_timestamp TIMESTAMP,
-        last_accessed_timestamp TIMESTAMP NOT NULL,
-        creation_timestamp TIMESTAMP NOT NULL
-      );
-    `;
+        name VARCHAR NOT NULL UNIQUE,
+        muscle VARCHAR NOT NULL,
+        icon TEXT NOT NULL,
+        description TEXT NOT NULL,
+        image TEXT,
+        video TEXT,
+        normal_weight NUMERIC(5,1),
+        max_weight NUMERIC(5,1),
+        sets INTEGER NOT NULL,
+        exercises_per_set INTEGER NOT NULL
+    );
+`;
+
+  const createGymWorkoutSessionsTableQuery = `
+    CREATE TABLE IF NOT EXISTS gym_workout_sessions (
+        id UUID PRIMARY KEY,
+        start_time TIMESTAMP NOT NULL,
+        end_time TIMESTAMP NOT NULL,
+        gym_machine_sessions UUID[] NOT NULL,
+        notes TEXT NOT NULL,
+        program_id UUID REFERENCES gym_workout_programs(id) ON DELETE CASCADE
+    );
+`;
+
+  const createGymMachineSessionsTableQuery = `
+    CREATE TABLE IF NOT EXISTS gym_machine_sessions (
+        id UUID PRIMARY KEY,
+        machine_id UUID NOT NULL REFERENCES gym_machines(id) ON DELETE CASCADE,
+        normal_weight NUMERIC(5,1) NOT NULL,
+        max_weight NUMERIC(5,1) NOT NULL,
+        start_time TIMESTAMP,
+        end_time TIMESTAMP,
+        sets INTEGER NOT NULL,
+        exercises_per_set INTEGER NOT NULL
+    );
+`;
+
+  const createGymWorkoutProgramsTableQuery = `
+    CREATE TABLE IF NOT EXISTS gym_workout_programs (
+        id UUID PRIMARY KEY,
+        name VARCHAR NOT NULL UNIQUE,
+        description TEXT NOT NULL,
+        gym_machines UUID[] NOT NULL
+    );
+`;
+  // todo gym_machines is a problem here. what if it's deleted? all arrays are not cascade. what if we just create a many-to-many table for all that stuff?
+  // ask chatgpt, and also watch the video i saved about databases.
 
   try {
     await initDbTable(createExpensesTableQuery, "expenses");
