@@ -199,6 +199,7 @@ function LoginForm() {
           <Label htmlFor="password-1">Password</Label>
           <Input
             id="password-1"
+            type="password"
             name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -315,6 +316,7 @@ function CreateAccountForm({
           <Label htmlFor="password-1">Password</Label>
           <Input
             id="password-1"
+            type="password"
             name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

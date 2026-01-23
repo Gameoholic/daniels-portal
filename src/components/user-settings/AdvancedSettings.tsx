@@ -87,6 +87,7 @@ const router = useRouter();
       <p className="font-semibold text-2xl mb-2">Advanced Security Settings</p>
       <p className="font-semibold text-1xl">Access Tokens</p>
       {/* todo after handling skeletons remove all the nullibity checks resulting from user? */}
+      <div className="flex flex-col gap-2">
       <DefaultTokenExpiryComponent
       router={router}
         currentExpirySeconds={user?.defaultTokenExpirySeconds ?? 1}
@@ -97,6 +98,7 @@ const router = useRouter();
         currentMaxTokensAtATime={user?.maxTokensAtATime ?? null}
         tokenAmount={tokenAmount!!} // todo we shouldn't even have to do !! if we just sort out the skeleton nullability stuff
       />
+      </div>
     </div>
   );
 }
