@@ -33,7 +33,6 @@ Internal queries:
 
 
 todo:
-- [ ] advanced settings tab: fix max access tokens warning even if current token amount changed (we're not refreshing the page, so the tokenAmount variable doesn't update hence the un-updated warning)
 - [x] Check permissions before running server queries and/or actions? - YES. ALWAYS check BOTH token validity AND permission in db_actions. db_queries is ok not to check there we're not calling it directly. Maybe lock it somehow?
 - [ ] https://www.youtube.com/watch?v=mCmwqhvsyUg put everytnihnig into components
 - [ ] All action and query arguments can be undefined for some reason..? This can cause bugs
@@ -48,7 +47,6 @@ Semi-urgent fixes:
 - [ ] Add the user deleted/disabled check to verifyAccessToken and in general make sure user deletion/disabled state is accounted for in every query even login and account creation and even permissions.
 
 Non-urgent fixes:
-- [ ] Advanced user settings should round the default token expiry time (for example, setting to 99 minutes and refreshing will set it to 1.27 hours. In this case it should just show 99 minutes and not 1.27 hours). It should never be float when displayed to user, because if it's float server action will return error.
 - [ ] Fix the icons being visible to even people who don't have permissions by putting them all into their own separate components? Only send the components the user has access to via a big server component.
 - [ ] Stop using interfaces, move on to actual types, and make sure the internal server ones are not importable in client (right now they are because interface stupid.)
 - [ ] Should you be able to ban/unban/give perms/remove perms/etc for yourself? What about undisabling an account through the admin panel?
@@ -56,7 +54,7 @@ Non-urgent fixes:
 - [ ] Script to create .env.local
 - [ ] Make a check that runs at the start of every script, as well as our general app, that checks if .env.local has all required parameters provided in the default file
 
-Non-urgent features:
+Non-urgent featu    res:
 - [ ] Home page: Messages
 - [ ] executeDatabaseQuery: built-in permission check with permission as argument?
 - [ ] User settings security: The last successful log in made on your account using your password. (This does not include devices accessing your account via already existing access tokens.)

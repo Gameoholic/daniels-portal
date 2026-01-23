@@ -46,7 +46,7 @@ import { Separator } from "@/components/ui/separator";
 import { ReactNode, useState } from "react";
 import SensitiveComponent from "../global/SensitiveComponent";
 import { toast } from "sonner";
-import { Router, useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -63,6 +63,9 @@ import {
   invalidateTokensIfOverMaxAmountAction,
   UserSettingsActions_GetUserAction_Result,
 } from "@/src/actions/per-page/user-settings";
+import { DurationPicker } from "../global/DurationPicker";
+import { ExpiryUnit } from "@/src/util/duration";
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
 export default function AdvancedSettings({
   user,
@@ -75,6 +78,7 @@ export default function AdvancedSettings({
   loading: boolean;
   errorString: string;
 }) {
+const router = useRouter();
   if (loading) {
     return <div>todo skeletons here</div>;
   }
@@ -84,9 +88,11 @@ export default function AdvancedSettings({
       <p className="font-semibold text-1xl">Access Tokens</p>
       {/* todo after handling skeletons remove all the nullibity checks resulting from user? */}
       <DefaultTokenExpiryComponent
+      router={router}
         currentExpirySeconds={user?.defaultTokenExpirySeconds ?? 1}
       />
       <MaxAccessTokensAtATimeComponent
+      router={router}
         userId={user?.id ?? null}
         currentMaxTokensAtATime={user?.maxTokensAtATime ?? null}
         tokenAmount={tokenAmount!!} // todo we shouldn't even have to do !! if we just sort out the skeleton nullability stuff
@@ -99,10 +105,12 @@ function MaxAccessTokensAtATimeComponent({
   userId,
   currentMaxTokensAtATime,
   tokenAmount,
+  router
 }: {
   userId: string | null;
   currentMaxTokensAtATime: number | null;
   tokenAmount: number;
+  router: AppRouterInstance
 }) {
   const [showWarning, setShowWarning] = useState<boolean>(false);
   const [enableMaxTokens, setEnableMaxTokens] = useState<boolean>(
@@ -142,6 +150,7 @@ function MaxAccessTokensAtATimeComponent({
         duration: 3000,
       });
     }
+    router.refresh();
   }
   return (
     <div className="flex items-center gap-2">
@@ -248,91 +257,56 @@ function DeleteOldAccessTokensWarningWrapper({
   );
 }
 
+
+
 function DefaultTokenExpiryComponent({
   currentExpirySeconds,
+  router
 }: {
   currentExpirySeconds: number;
+  router: AppRouterInstance
 }) {
-  const expiryThresholds = [
-    { maxSeconds: 60, unit: "seconds", divideSecondsBy: 1 },
-    { maxSeconds: 60 * 60, unit: "minutes", divideSecondsBy: 60 },
-    { maxSeconds: 60 * 60 * 24, unit: "hours", divideSecondsBy: 60 * 60 },
-  ];
 
-  const currentExpiryUnit =
-    expiryThresholds.find((x) => currentExpirySeconds < x.maxSeconds)?.unit ??
-    "days";
-  const currentExpiryValue =
-    currentExpirySeconds /
-    (expiryThresholds.find((x) => x.unit == currentExpiryUnit)
-      ?.divideSecondsBy ?? 60 * 60 * 24); // the one for days
-
-  const [expiryUnit, setExpiryUnit] = useState<string>(currentExpiryUnit);
-  const [expiryValue, setExpiryValue] = useState<number>(currentExpiryValue);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  async function updateExpiry(newExpiryUnit: string, newExpiryValue: number) {
+async function updateExpiry(seconds: number) {
     if (loading) {
       return;
     }
     setLoading(true);
 
-    const action = await changeDefaultTokenExpiryAction(
-      newExpiryValue *
-        (expiryThresholds.find((x) => x.unit == newExpiryUnit)
-          ?.divideSecondsBy ?? 60 * 60 * 24) // the one for days
+    const action = await changeDefaultTokenExpiryAction(seconds
     );
     setLoading(false);
 
     if (!action.success) {
       setError(action.errorString);
-      // todo here revert to old value
-      // for ALL action forms in the website we need to handle errors, so far we don't.
     } else {
       toast("Value updated successfully.", {
         icon: <CheckCircle2Icon className="text-success-foreground w-5 h-5" />,
         duration: 3000,
       });
     }
+    router.refresh();
   }
+
   return (
-    <div className="flex items-center">
-      <div className="flex items-center gap-2 mr-3">
-        <span className="text-muted-foreground">Default token expiry:</span>
-        <DefaultTokenExpiryTooltip />
-      </div>
-      <Input
-        className="w-[70px] m-2 text-center"
-        value={expiryValue}
+    <div className="flex gap-2 items-center">
+      <span className="text-muted-foreground">Default token expiry:</span>
+      <DefaultTokenExpiryTooltip />
+      <DurationPicker
+        key={currentExpirySeconds}
+        initialDurationSeconds={currentExpirySeconds}
+        maxDurationValue={99}
+        onDurationChange={updateExpiry}
         disabled={loading}
-        onChange={(e) => {
-          let num = Number(e.target.value) || 1;
-          num = Math.min(99, Math.max(1, num));
-          setExpiryValue(num);
-        }}
-        // todo: this onBlur is a lazy solution. also if the value doesnt change it still calls onBlur resulting in an unnecessary data update request
-        onBlur={() => {
-          updateExpiry(expiryUnit, expiryValue);
-        }}
-      ></Input>
-      <Select
-        value={expiryUnit}
-        onValueChange={(value) => {
-          setExpiryUnit(value);
-          updateExpiry(value, expiryValue);
-        }}
-        disabled={loading}
-      >
-        <SelectTrigger className="w-[100px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="minutes">Minutes</SelectItem>
-          <SelectItem value="hours">Hours</SelectItem>
-          <SelectItem value="days">Days</SelectItem>
-        </SelectContent>
-      </Select>
+        excludedUnits={[
+          ExpiryUnit.SECONDS,
+          ExpiryUnit.YEARS,
+          ExpiryUnit.MONTHS,
+        ]}
+      />
     </div>
   );
 }
