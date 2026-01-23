@@ -220,7 +220,6 @@ const initDbTables = async (): Promise<void> => {
       "account_creation_codes",
     );
     await initDbTable(createUserPermissionsTableQuery, "user_permissions");
-    await initDbTable(createGymWeightsTableQuery, "gym_weights");
     await initDbTable(
       createTimeManagementActivitiesTableQuery,
       "time_management_activities",

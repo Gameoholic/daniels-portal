@@ -8,9 +8,20 @@ import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { Client, ClientConfig } from "pg";
 import { v4 as uuidv4 } from "uuid";
-
+import path from "node:path";
 import dotenv from "dotenv";
+
 dotenv.config({ path: ".env.local" });
+const envFiles = [
+  ".env",
+  ".env.local",
+];
+for (const file of envFiles) {
+  dotenv.config({
+    path: path.resolve(process.cwd(), file),
+    override: true, 
+  });
+}
 
 const EXPIRATION_MINUTES = 5;
 const DEFAULT_TOKEN_EXPIRY_SECONDS = 3600;
