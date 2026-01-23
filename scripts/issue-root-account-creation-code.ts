@@ -15,6 +15,7 @@ dotenv.config({ path: ".env.local" });
 const envFiles = [
   ".env",
   ".env.local",
+  ".env.development.local"
 ];
 for (const file of envFiles) {
   dotenv.config({
