@@ -270,6 +270,10 @@ export async function deleteUserPermissionAction(
     return databaseQueryError("Permission doesn't exist.");
   }
 
+  if (permissionToRemove === Permission.SUDO ) {  // todo: this check should be for all issuableBySystem permissions, not just SUDO
+    return databaseQueryError("Can't assign privileged permission.");
+  }
+
   // Ensure that provided user ID is not self
   const getUserQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
@@ -315,6 +319,10 @@ export async function addUserPermissionAction(
 
   if (!assertIsKnownPermission(permissionToAdd)) {
     return databaseQueryError("Permission doesn't exist.");
+  }
+
+  if (permissionToAdd === Permission.SUDO ) {  // todo: this check should be for all issuableBySystem permissions, not just SUDO
+    return databaseQueryError("Can't assign privileged permission.");
   }
 
   // Ensure that provided user ID is not self
@@ -542,6 +550,10 @@ export async function removePermissionFromAccountCreationCodeAction(
     return databaseQueryError("Permission doesn't exist.");
   }
 
+  if (permissionToRemove === Permission.SUDO ) {  // todo: this check should be for all issuableBySystem permissions, not just SUDO
+    return databaseQueryError("Can't assign privileged permission.");
+  }
+
   // Validate account creation code is valid
   const getAccountCreationCodeQuery = await executeDatabaseQuery(
     await getAccessTokenFromBrowser(),
@@ -598,6 +610,11 @@ export async function addPermissionToAccountCreationCodeAction(
   // Validate permission is valid
   if (!assertIsKnownPermission(permissionToAdd)) {
     return databaseQueryError("Permission doesn't exist.");
+  }
+
+  // Validate permission is not issuableBySystem
+  if (permissionToAdd === Permission.SUDO ) {  // todo: this check should be for all issuableBySystem permissions, not just SUDO
+    return databaseQueryError("Can't assign privileged permission.");
   }
 
   // Validate account creation code is valid
