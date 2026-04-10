@@ -67,6 +67,7 @@ export async function SidebarServer() {
   // Filter available nav items by user permissions
   const navItemsForUser: SidebarItem[] = navItems
     .filter((item) =>
+      userPermissions.some((permission) => permission.name === Permission.SUDO) ||
       userPermissions.some(
         (permission) => permission.name === item.requiredPermission
       )
