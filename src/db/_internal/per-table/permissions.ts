@@ -122,7 +122,7 @@ export const PERMISSION_DATA: Record<Permission, PermissionData> = {
   },
 
   [Permission.SUDO]: {
-    description: "Any permission check wil succeed.",
+    description: "Any permission check will succeed.",
     category: PermissionCategory.IssuableOnlyBySystem,
     isPrivileged: true,
   },
