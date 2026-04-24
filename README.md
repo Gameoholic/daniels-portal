@@ -1,10 +1,10 @@
 # Daniel's Portal
 
-Self-hosted auth and permissions platform. Serves as a backbone for a suite of personal apps (bookkeeping, gym tracker, shopping list, etc.).
+Self-hosted auth and permissions platform. Handles auth for my personal apps (bookkeeping, gym tracker, shopping list, etc.).
 
-**Live:** https://portal.gameoholic.dev/
+**Live:** https://www.portaldaniel.com/
 
-Demo accounts (public credentials, thus permissions may have been messed with):
+Demo accounts (public credentials, so permissions may have been messed with):
 - `guest` / `guest`
 - `admin` / `admin`
 
@@ -14,7 +14,7 @@ Demo accounts (public credentials, thus permissions may have been messed with):
 
 Next.js · TypeScript · PostgreSQL · TailwindCSS · bcrypt · Resend · shadcn/ui
 
-## What's interesting about this project
+## Features & Architecture
 
 ### DAL is enforced by the type system, not by convention
 
@@ -29,14 +29,14 @@ Both paths are typed so you can't accidentally use the wrong one.
 ### DB-backed access tokens, not JWTs
 
 Every request validates against the DB. Slower than JWT but allows:
-- Immediate revocation (critical for a portal that might host banking/email apps)
+- Immediate revocation (I want to kill sessions immediately when something feels off, not wait 15 minutes for a JWT to expire)
 - Last-use tracking per token
 - User-configurable concurrent session limit, with auto-revoke of oldest tokens when exceeded
 - Per-token metadata on why it was invalidated (expired / revoked / auto-revoked)
 
 ### Server never trusts the client
 
-Every server action re-verifies the token AND re-checks that the requested resource belongs to the token's owner. Knowing a valid expense ID isn't enough to read or mutate that expense.
+Every server action re-verifies the token AND re-checks that the requested resource belongs to the token's owner. Knowing a valid expense ID isn't enough to access it.
 
 Server-only types are mapped to minimized client-facing types before returning. The client never sees internal fields.
 
@@ -54,7 +54,7 @@ Admins issue single-use account creation codes tied to:
 
 Both issuer and new user get confirmation emails when a code is redeemed.
 
-### Misc security
+### Misc. security
 
 - bcrypt with configurable salt rounds
 - Login response is identical whether the username exists or not, with a fake bcrypt comparison on username miss to defeat timing attacks
