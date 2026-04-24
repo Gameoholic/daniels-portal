@@ -1,81 +1,100 @@
+# Daniel's Portal
 
-https://www.youtube.com/watch?v=mCmwqhvsyUg
+Self-hosted auth and permissions platform. Serves as a backbone for a suite of personal apps (bookkeeping, gym tracker, shopping list, etc.).
 
-Server actions under the hood are just API endpoints.
-Server components only rendered on server.
+**Live:** https://portal.gameoholic.dev/
 
-server action order (the order is important and thought of!):
-- ensure "import server-only" for DAL and "use server" for server actions
-- check relevant permissions
-- check user is not deleted/disabled, and then:
-- check passed query arguments are associated with the user, or that they're not the users but they have permission to affect them. 
-    As a rule of thumb, no need to check GET_USER_ID_FROM_ACCESS_TOKEN or non-id variables (like expense name or description or timestamp), but stuff like
-    expense id or weight id or document id should be checked when updating expense/weight/document respectively.
-    (eg. a user could use their own token to request to update another user's expense, as long as they know the expense ID.
-    The user's own token is valid, therefore we don't return an error.) 
-    Without this check, the only layer of defense is that the the user doesn't know other user's expense ids. But we should NEVER rely on that.
-    Also make sure THAT user isn't deleted/disabled.
-    (for example I want to update another user's expense with the expense id, but that user is disabled/deleted!)
-- Check that entries are still valid and not expired/deleted/revoked when updating/getting them.
-- check whether arguments are valid
-- call AUTHENTICATED query/ies with the user's token
-- if returns non-void type, convert to minimized-data type
+Demo accounts (public credentials, thus permissions may have been messed with):
+- `guest` / `guest`
+- `admin` / `admin`
 
-Internal queries:
-- Add the AuthorizedDALScope for authenticated queries, and the AuthroizedDALTokenlessQueryScope to tokenless queries. 
-    In the case of the latter, put them in tokenless-queries.ts. Be Careful with tokenless queries, they don't require an authenticated token to execute. 
-    (use only in homepage and middleware)
-- Convention #1: Don't pass servertypes as parameters. Pass parameters individually. ServerTypes are only to be used when returned from queries, 
-    aka, only when we know the object 100% exists. This is to prevent human mistakes, so we always know a ServerType is valid and was returned by server.
-- Convention #2: If the query returns a singular object, return null if it doesn't exist. If it's an array, return an empty array.
-- Throw error if result.rowCount == 0 in update queries.
-- Document the function
+> ⚠️ Work in progress, currently on hold. Placeholders and incomplete pages exist.
 
+## Stack
 
-todo:
-- [x] Check permissions before running server queries and/or actions? - YES. ALWAYS check BOTH token validity AND permission in db_actions. db_queries is ok not to check there we're not calling it directly. Maybe lock it somehow?
-- [ ] https://www.youtube.com/watch?v=mCmwqhvsyUg put everytnihnig into components
-- [ ] All action and query arguments can be undefined for some reason..? This can cause bugs
-- [ ] Admin panel: last account usage doesnt work if no access tokens exist.
-- [x] Why do we have try{} inside internal db queries just to throw the error later..?
-- [ ] User management - fix up access tokens section, and actions(?) section
-- [ ] Rewrite account creation code component - super messy
+Next.js · TypeScript · PostgreSQL · TailwindCSS · bcrypt · Resend · shadcn/ui
 
-Semi-urgent fixes:
-- [ ] Eventually when we add account deletion, validateToken should check that the account isn't deleted, and also any query that passes a user id as a parameter (even updating other users like from the admin page) should ensure that the user isn't deleted ugh this is a pain maybe think of a better solution like globally across all internal queries only update user if it isn't deleted or smthn
-- [ ] Before executing any server action, make sure the user isn't deleted/disabled (server action order step 2 and 3. just haven't done it yet)
-- [ ] Add the user deleted/disabled check to verifyAccessToken and in general make sure user deletion/disabled state is accounted for in every query even login and account creation and even permissions.
+## What's interesting about this project
 
-Non-urgent fixes:
-- [ ] Fix the icons being visible to even people who don't have permissions by putting them all into their own separate components? Only send the components the user has access to via a big server component.
-- [ ] Stop using interfaces, move on to actual types, and make sure the internal server ones are not importable in client (right now they are because interface stupid.)
-- [ ] Should you be able to ban/unban/give perms/remove perms/etc for yourself? What about undisabling an account through the admin panel?
-- [ ] Why do we throw and catch error in all internal db functions? we can just throw it.
-- [ ] Script to create .env.local
-- [ ] Make a check that runs at the start of every script, as well as our general app, that checks if .env.local has all required parameters provided in the default file
+### DAL is enforced by the type system, not by convention
 
-Non-urgent featu    res:
-- [ ] Home page: Messages
-- [ ] executeDatabaseQuery: built-in permission check with permission as argument?
-- [ ] User settings security: The last successful log in made on your account using your password. (This does not include devices accessing your account via already existing access tokens.)
-- [ ] User Settings security: Unsuccessful login attempts since last successful log in using your password.
-- [ ] User Settings security: Last failed log in date
-- [ ] Default max access tokens at a time and token expiration values configurable in env variables
-- [ ] throw error if result.rowcount == 0 in internal insert queries? Similar to update queries
-- [ ] make the tokenlessqueryscope only importable in tokenless-queries.ts, just for extra developer experience and safety.
-- [ ] Better error tracking. Build some kind of error sentry, and have server-errors and client-errors along with timestamp and userid be logged in memory or something (database too expensive). Never send client the error code cause they can use it to try and figure out what caused an error (for example, sometimes in the code we mask the true error and return a fake error), but have an optional error string that IS sent to the client. Otherwise just send internal server error, contact administrator or try again.
-- [ ] "root" default user with all permissions when we first start the server? (password must be changed / account will be deleted after first log in) make sure it's marked as a sudo one-time account creation code. then make the password randomly generated or something and delete it? also make it so bootstrap token duration cannot be changed. (maybe actually just make it create the account instead of an account creation code? more secure this way. with a randomly generated password that will be sent in terminal)
-- [ ] Revoker user id for access tokens, same for query deletion and all other actions
-- [ ] Preferences in user settings: Default browser settings values on new access token creation (when new access tokens created, use light theme, or use this date format, etc.)
-- [ ] When 100% completely deleting users make sure we delete ALL data including permissions, so a newly created user with accidentally the same id won't be able to access that data. use db transactions to ensure this.
-- [ ] all-permissions permission for specific scripts (like for root user)
-- [ ] When account created by system, show system
+All DB queries live in `_internal/` and require a `DALScope` parameter. `DALScope` is a TypeScript `unique symbol` that can only be constructed inside the DAL. Calling a raw query from anywhere else fails to compile.
 
-Non-urgent polish an d UX:
-- [ ] User settings advanced settings: "Unsaved" field when max access token value changed without clicking save (also don't forget to re-display if there was an error and it didn't go through)
-- [ ] User settings advanced settings: Revert default token expiry value if there was an error and it didn't go through (or just refresh the page?)
-- [ ] middleware redirects to an error page for errors instead of returning json
-- [ ] Make the permissions tab in user management "add permission button" be aligned with the section below "use app", be on the same line as the section below the first category of permissions (so the categories arent mb-ed below it)
-- [ ] https://www.youtube.com/watch?v=BhNSauna0eo
-- [ ] https://www.youtube.com/watch?v=Ubbb1RK7iFs
-- [ ] optimistic UI: https://www.youtube.com/watch?v=OWuMckXJ-9k
+Two execution paths:
+- `executeDatabaseQuery` — validates the access token, resolves the user ID via a `GET_USER_ID_FROM_ACCESS_TOKEN` symbol
+- `tokenless_executeDatabaseQuery` — separate path for login and account creation, the only operations that legitimately run without a token
+
+Both paths are typed so you can't accidentally use the wrong one.
+
+### DB-backed access tokens, not JWTs
+
+Every request validates against the DB. Slower than JWT but allows:
+- Immediate revocation (critical for a portal that might host banking/email apps)
+- Last-use tracking per token
+- User-configurable concurrent session limit, with auto-revoke of oldest tokens when exceeded
+- Per-token metadata on why it was invalidated (expired / revoked / auto-revoked)
+
+### Server never trusts the client
+
+Every server action re-verifies the token AND re-checks that the requested resource belongs to the token's owner. Knowing a valid expense ID isn't enough to read or mutate that expense.
+
+Server-only types are mapped to minimized client-facing types before returning. The client never sees internal fields.
+
+### Permissions are per-resource, not role-based
+
+Each app in the portal has its own permission (`use_bookkeeping`, `use_gym`, etc.). Admin capabilities are split into individual actions (`manage_tokens`, `delete_users`, `issue_creation_codes`, etc.). No "admin" role — just a set of granted permissions per user.
+
+### Invite-only registration
+
+Admins issue single-use account creation codes tied to:
+- A specific email address (can't be forwarded)
+- A predefined permission set
+- A default token expiry for that user
+- A code expiry
+
+Both issuer and new user get confirmation emails when a code is redeemed.
+
+### Misc security
+
+- bcrypt with configurable salt rounds
+- Login response is identical whether the username exists or not, with a fake bcrypt comparison on username miss to defeat timing attacks
+- Admin panel never exposes raw token values, only an unrelated alias string
+- Emails are censored in the UI
+
+## Bootstrap
+
+Utility script creates the initial SUDO account with all permissions. Run once, then delete.
+
+## Roadmap / known issues
+
+### Security
+- Validate `deleted` / `disabled` state inside `verifyAccessToken` and every query accepting a user ID
+- Refresh token race condition: concurrent requests at expiry all fail except the first
+- Refresh tokens should store user ID so password change / logout invalidates all sessions
+- Hard-delete should cascade with DB transactions so a recycled user ID can't inherit old data
+- Replace bootstrap account creation codes with a one-time flow that prints a random password to terminal
+
+### Features
+- Home page: messages
+- Per-user security log: last successful password login, failed login count since last success, last failed login timestamp
+- Per-user default preferences applied to newly issued tokens (theme, date format, etc.)
+- Revoker ID stored on access tokens and admin actions
+- `all-permissions` meta-permission for privileged scripts
+
+### DX
+- Remove `interface`, use `type`, so server-internal types can't leak to the client via declaration merging
+- Permission check as an argument to `executeDatabaseQuery`
+- Restrict `TokenlessQueryScope` imports to `tokenless-queries.ts` only
+- `.env.local` generation script + boot-time validation of required env vars
+- Proper error logging kept in memory (DB would be too expensive), with user ID and timestamp per error. Client only receives generic errors, never the internal code or message.
+
+### Bugs
+- Admin panel "last account usage" breaks when a user has no access tokens
+- Action/query arguments accept `undefined` in places where they shouldn't
+- Middleware should redirect to an error page instead of returning JSON
+- System-issued permissions shouldn't be visible on admin page.
+
+### Polish
+- "Unsaved" indicator in settings when max token value is edited without saving
+- Revert default token expiry on failed save
+- Alignment fixes in the permissions tab
