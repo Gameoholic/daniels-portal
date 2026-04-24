@@ -2,7 +2,7 @@
 
 Self-hosted auth and permissions platform. Handles auth for my personal apps (bookkeeping, gym tracker, shopping list, etc.).
 
-**Live:** https://www.portaldaniel.com/
+**Live at:** https://www.portaldaniel.com/
 
 Demo accounts (public credentials, so permissions may have been messed with):
 - `guest` / `guest`
